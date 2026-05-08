@@ -1,0 +1,144 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LABAIK | Admin CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #050A09; color: #e0e0e0; font-family: 'Inter', sans-serif; padding: 20px; }
+        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px; margin-bottom: 20px; }
+        input, select { background: #0D1412; border: 1px solid #1A2622; color: white; padding: 12px; border-radius: 12px; width: 100%; margin: 8px 0; outline: none; }
+        .btn-green { background: #1DB954; color: #050A09; font-weight: 800; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body class="max-w-4xl mx-auto">
+
+    <header class="mb-10 border-b border-white/5 pb-6">
+        <h1 class="text-3xl font-black text-[#1DB954]">LABAIK STUDIO</h1>
+        <p class="text-xs text-gray-500 uppercase tracking-widest">Live Content Management</p>
+    </header>
+
+    <div class="grid md:grid-cols-2 gap-6">
+        <div class="card">
+            <h2 class="font-bold text-sm text-[#1DB954] uppercase mb-4">1. Category</h2>
+            <div class="flex gap-2">
+                <input type="text" id="cat-name" placeholder="Category Name">
+                <button onclick="addCategory()" class="bg-white text-black px-4 rounded-xl font-bold">Add</button>
+            </div>
+            <div id="cat-display" class="mt-4 space-y-2"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="font-bold text-sm text-[#1DB954] uppercase mb-4">2. Reciter</h2>
+            <input type="text" id="cre-name" placeholder="Name">
+            <input type="text" id="cre-pic" placeholder="Image URL">
+            <button onclick="addCreator()" class="btn-green">Register Reciter</button>
+            <div id="cre-display" class="mt-4 space-y-2"></div>
+        </div>
+    </div>
+
+    <div class="card mt-6">
+        <h2 class="font-bold text-sm text-[#1DB954] uppercase mb-6">3. Publish Noha</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+            <select id="n-cat"><option>Assign Category</option></select>
+            <select id="n-cre"><option>Assign Reciter</option></select>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+            <input type="text" id="n-name" placeholder="Noha Title">
+            <input type="text" id="n-pic" placeholder="Cover Image URL">
+        </div>
+        <input type="text" id="n-url" placeholder="Main Audio (MP3 Link)">
+        <div class="grid md:grid-cols-2 gap-4">
+            <input type="text" id="n-nature" placeholder="Nature Mix URL">
+            <input type="text" id="n-rain" placeholder="Rain Mix URL">
+        </div>
+        <button onclick="publishNoha()" class="btn-green mt-6">PUBLISH TO LIVE APP</button>
+    </div>
+
+    <div class="card">
+        <h2 class="font-bold text-sm text-gray-500 uppercase mb-4">Live Songs</h2>
+        <div id="noha-list" class="space-y-3"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1tNtHLr5xiTFuU9qvEEc6IwmQFqWJLU4",
+            authDomain: "zaigham-apps.firebaseapp.com",
+            projectId: "zaigham-apps",
+            appId: "1:640695849473:web:8720ecd76e0634661a2600"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.addCategory = async () => {
+            const name = document.getElementById('cat-name').value;
+            if(name) await addDoc(collection(db, "categories"), { name });
+            document.getElementById('cat-name').value = '';
+        };
+
+        onSnapshot(collection(db, "categories"), (snap) => {
+            const disp = document.getElementById('cat-display');
+            const select = document.getElementById('n-cat');
+            disp.innerHTML = ''; select.innerHTML = '<option>Assign Category</option>';
+            snap.forEach(d => {
+                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-trash-alt text-red-500 cursor-pointer" onclick="remove('categories','${d.id}')"></i></div>`;
+                select.innerHTML += `<option value="${d.id}">${d.data().name}</option>`;
+            });
+        });
+
+        window.addCreator = async () => {
+            const name = document.getElementById('cre-name').value;
+            const pic = document.getElementById('cre-pic').value;
+            if(name) await addDoc(collection(db, "creators"), { name, pic });
+            document.getElementById('cre-name').value = '';
+        };
+
+        onSnapshot(collection(db, "creators"), (snap) => {
+            const disp = document.getElementById('cre-display');
+            const select = document.getElementById('n-cre');
+            disp.innerHTML = ''; select.innerHTML = '<option>Assign Reciter</option>';
+            snap.forEach(d => {
+                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-trash-alt text-red-500 cursor-pointer" onclick="remove('creators','${d.id}')"></i></div>`;
+                select.innerHTML += `<option value="${d.id}">${d.data().name}</option>`;
+            });
+        });
+
+        window.publishNoha = async () => {
+            const data = {
+                name: document.getElementById('n-name').value,
+                songPic: document.getElementById('n-pic').value,
+                url: document.getElementById('n-url').value,
+                catId: document.getElementById('n-cat').value,
+                creId: document.getElementById('n-cre').value,
+                natureUrl: document.getElementById('n-nature').value,
+                rainUrl: document.getElementById('n-rain').value,
+                timestamp: Date.now()
+            };
+            if(data.name && data.url) {
+                await addDoc(collection(db, "labaik_songs"), data);
+                alert("Noha Published!");
+                document.querySelectorAll('input').forEach(i => i.value = '');
+            }
+        };
+
+        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+            const disp = document.getElementById('noha-list');
+            disp.innerHTML = '';
+            snap.forEach(d => {
+                disp.innerHTML += `<div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl">
+                    <img src="${d.data().songPic}" class="w-10 h-10 rounded-lg object-cover">
+                    <div class="flex-1 text-xs font-bold">${d.data().name}</div>
+                    <i class="fas fa-trash-alt text-red-500 cursor-pointer" onclick="remove('labaik_songs','${d.id}')"></i>
+                </div>`;
+            });
+        });
+
+        window.remove = async (coll, id) => { if(confirm("Delete?")) await deleteDoc(doc(db, coll, id)); };
+    </script>
+</body>
+</html>
+
