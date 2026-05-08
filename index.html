@@ -7,95 +7,135 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --matte: #121212; --spotify: #1DB954; }
+        :root { --matte: #0A0A0A; --spotify: #1DB954; --card: #181818; }
         body { background: var(--matte); color: white; font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
         
-        .view-layer { position: fixed; inset: 0; z-index: 200; transform: translateX(100%); transition: 0.4s cubic-bezier(0.3, 0, 0, 1); background: var(--matte); overflow-y: auto; display: none; }
-        .view-layer.active { transform: translateX(0); display: block; }
+        .view-layer { position: fixed; inset: 0; z-index: 200; transform: translateY(100%); transition: 0.5s cubic-bezier(0.3, 0, 0, 1); background: var(--matte); overflow-y: auto; }
+        .view-layer.active { transform: translateY(0); }
         
-        .spotify-card { border-radius: 8px; padding: 12px; height: 110px; position: relative; overflow: hidden; cursor: pointer; transition: 0.2s; }
-        .spotify-card img { position: absolute; width: 70px; height: 70px; right: -15px; bottom: -5px; transform: rotate(25deg); object-fit: cover; border-radius: 4px; }
+        .spotify-card { border-radius: 12px; padding: 16px; height: 120px; position: relative; overflow: hidden; cursor: pointer; transition: 0.3s; background: #282828; }
+        .spotify-card:hover { transform: translateY(-5px); }
+        .spotify-card img { position: absolute; width: 80px; height: 80px; right: -15px; bottom: -5px; transform: rotate(25deg); object-fit: cover; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         
-        .glass-header { background: linear-gradient(to bottom, #1db95444, var(--matte)); }
+        .glass-header { background: linear-gradient(to bottom, #1db95433, var(--matte)); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
         input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 4px; border-radius: 4px; accent-color: var(--spotify); }
+        .nav-active { color: white !important; }
+        .fav-active { color: var(--spotify) !important; transform: scale(1.2); }
     </style>
 </head>
 <body class="no-scrollbar">
 
     <div id="splash" class="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <h1 class="text-5xl font-black tracking-tighter text-white">LABAIK</h1>
-        <p class="text-[#1DB954] text-[10px] font-bold mt-4 tracking-[0.5em] uppercase">By DAK</p>
+        <h1 class="text-6xl font-black tracking-tighter text-white">LABAIK</h1>
+        <p class="text-[#1DB954] text-[10px] font-bold mt-4 tracking-[0.6em] uppercase">The Call of Devotion</p>
     </div>
 
     <div id="app-wrap" class="pb-32 opacity-0 transition-opacity duration-1000">
-        <div id="home-content" class="main-view">
-            <header class="p-6 flex justify-between items-center">
-                <h1 class="text-2xl font-bold">Good Day</h1>
-                <i class="fas fa-cog text-xl text-gray-400" onclick="toggleView('settings-view', true)"></i>
+        <div id="home-content" class="main-view p-6">
+            <header class="flex justify-between items-center mb-8">
+                <h1 id="greeting-text" class="text-2xl font-bold">Good Day</h1>
+                <div onclick="toggleView('settings-view', true)" class="cursor-pointer">
+                    <img id="header-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-9 h-9 rounded-full border border-zinc-700 object-cover">
+                </div>
             </header>
-            <section class="px-4 mb-8">
-                <h2 class="text-lg font-bold mb-4">Reciters</h2>
-                <div id="creator-grid" class="grid grid-cols-2 gap-3"></div>
+            
+            <section class="mb-10">
+                <h2 class="text-xl font-bold mb-5">Featured Reciters</h2>
+                <div id="creator-grid" class="grid grid-cols-2 gap-4"></div>
             </section>
-            <section class="px-4">
-                <h2 class="text-lg font-bold mb-4">Latest Nohas</h2>
-                <div id="noha-feed" class="space-y-4"></div>
+
+            <section>
+                <h2 class="text-xl font-bold mb-5">Trending Now</h2>
+                <div id="noha-feed" class="space-y-5"></div>
             </section>
+        </div>
+
+        <div id="search-content" class="main-view hidden p-6">
+            <h1 class="text-3xl font-bold mb-6">Search</h1>
+            <div class="relative mb-8">
+                <i class="fas fa-search absolute left-4 top-4 text-zinc-400"></i>
+                <input type="text" id="user-search" oninput="doSearch()" placeholder="Artist, songs, or podcasts" 
+                    class="w-full bg-[#242424] py-4 pl-12 pr-4 rounded-full text-white font-medium outline-none focus:ring-2 ring-white/20 transition-all">
+            </div>
+            <div id="search-results" class="grid grid-cols-1 gap-4"></div>
         </div>
     </div>
 
     <div id="playlist-view" class="view-layer">
-        <div class="glass-header p-6 pb-10">
-            <i class="fas fa-chevron-down text-2xl mb-8" onclick="closeFullPlayer()"></i>
-            <img id="p-art" class="w-64 h-64 mx-auto shadow-2xl mb-8 object-cover rounded-md">
-            <h1 id="p-title" class="text-3xl font-black mb-1 text-center">Noha Name</h1>
-            <p id="p-artist" class="text-[#1DB954] text-sm font-bold mb-8 uppercase text-center tracking-widest">Reciter</p>
+        <div class="glass-header p-8 pb-12">
+            <header class="flex justify-between items-center mb-10">
+                <i class="fas fa-chevron-down text-xl" onclick="closeFullPlayer()"></i>
+                <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Playing Now</span>
+                <i class="fas fa-ellipsis-h opacity-60"></i>
+            </header>
+
+            <img id="p-art" class="w-full aspect-square max-w-[320px] mx-auto shadow-2xl mb-10 object-cover rounded-xl transition-all duration-500">
             
-            <div class="flex justify-between items-center px-4 mb-10">
-                <div class="flex gap-8 text-2xl text-gray-400">
-                    <i class="far fa-heart"></i>
-                    <i class="fas fa-share-alt"></i>
+            <div class="mb-10">
+                <h1 id="p-title" class="text-3xl font-black mb-2 truncate">Noha Title</h1>
+                <p id="p-artist" class="text-[#1DB954] font-bold text-sm tracking-widest uppercase">Labaik Reciter</p>
+            </div>
+            
+            <div class="flex justify-between items-center mb-10">
+                <div class="flex gap-8 text-2xl text-zinc-500">
+                    <i id="fav-icon" class="far fa-heart transition-all" onclick="toggleFavorite()"></i>
+                    <i class="fas fa-share-nodes" onclick="shareApp()"></i>
                 </div>
-                <button onclick="toggleAudio()" class="w-16 h-16 bg-[#1DB954] rounded-full flex items-center justify-center text-black text-3xl shadow-xl">
+                <button onclick="toggleAudio()" class="w-16 h-16 bg-[#1DB954] rounded-full flex items-center justify-center text-black text-3xl shadow-xl hover:scale-105 active:scale-95 transition-all">
                     <i id="play-btn-main" class="fas fa-play ml-1"></i>
                 </button>
             </div>
 
-            <div class="mx-4 glass p-6 rounded-3xl bg-white/5 border border-white/5">
-                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-6 text-center">Audio Control Panel</p>
+            <div class="bg-white/5 border border-white/10 p-6 rounded-3xl">
+                <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 text-center">Customize Atmosphere</p>
                 <div class="space-y-6">
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-volume-up text-[#1DB954] w-5"></i>
-                        <input type="range" id="vol-main" class="flex-1" value="100">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-dove text-gray-500 w-5"></i>
-                        <input type="range" id="vol-nature" class="flex-1" value="0">
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <i class="fas fa-cloud-rain text-gray-500 w-5"></i>
-                        <input type="range" id="vol-rain" class="flex-1" value="0">
-                    </div>
+                    <div class="flex items-center gap-4"><i class="fas fa-volume-high text-[#1DB954] w-5"></i><input type="range" id="vol-main" class="flex-1" value="100"></div>
+                    <div class="flex items-center gap-4"><i class="fas fa-wind text-zinc-500 w-5" id="nature-icon"></i><input type="range" id="vol-nature" class="flex-1" value="0"></div>
+                    <div class="flex items-center gap-4"><i class="fas fa-cloud-showers-heavy text-zinc-500 w-5" id="rain-icon"></i><input type="range" id="vol-rain" class="flex-1" value="0"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="mini-player" class="fixed bottom-20 left-2 right-2 bg-[#282828] h-14 rounded-md flex items-center px-2 hidden z-[300]" onclick="openFullPlayer()">
-        <img id="m-art" class="w-10 h-10 rounded mr-3 object-cover">
-        <div class="flex-1 overflow-hidden">
-            <h4 id="m-title" class="text-xs font-bold truncate"></h4>
-            <p class="text-[9px] text-[#1DB954] font-bold">LABAIK LIVE</p>
+    <div id="settings-view" class="view-layer p-8">
+        <header class="flex items-center gap-6 mb-12">
+            <i class="fas fa-arrow-left text-xl" onclick="toggleView('settings-view', false)"></i>
+            <h2 class="text-xl font-bold">Account</h2>
+        </header>
+
+        <div class="flex flex-col items-center mb-12">
+            <div class="relative mb-6 group" onclick="changeProfilePic()">
+                <img id="user-pic-large" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-32 h-32 rounded-full border-4 border-[#1DB954] p-1 object-cover shadow-2xl">
+                <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-camera"></i></div>
+            </div>
+            <input type="text" id="username-input" onblur="saveProfile()" class="bg-transparent text-center text-3xl font-black outline-none border-b-2 border-transparent focus:border-[#1DB954] transition-all w-full px-4" value="Rai Daim">
+            <p class="text-zinc-500 text-sm mt-2">Tap name to edit</p>
         </div>
-        <i onclick="event.stopPropagation(); toggleAudio();" id="m-play" class="fas fa-play px-4 text-lg"></i>
+
+        <div class="space-y-4">
+            <button class="w-full bg-[#242424] p-4 rounded-xl flex justify-between items-center" onclick="alert('Labaik Cloud Sync is Active!')">
+                <span class="font-bold">Premium Subscription</span>
+                <span class="text-[#1DB954] text-xs font-black">ACTIVE</span>
+            </button>
+        </div>
+
+        <div class="mt-20 text-center">
+            <p class="text-[10px] tracking-[0.8em] font-black uppercase text-zinc-600">Built By ZAK</p>
+        </div>
     </div>
 
-    <footer class="fixed bottom-0 w-full h-20 bg-black border-t border-white/5 flex justify-around items-center text-gray-500">
-        <div class="flex flex-col items-center gap-1 text-white"><i class="fas fa-home"></i><span class="text-[9px]">Home</span></div>
-        <div class="flex flex-col items-center gap-1"><i class="fas fa-search"></i><span class="text-[9px]">Search</span></div>
-        <div class="flex flex-col items-center gap-1"><i class="fas fa-layer-group"></i><span class="text-[9px]">Library</span></div>
+    <footer class="fixed bottom-0 w-full h-20 bg-black/90 backdrop-blur-md border-t border-white/5 flex justify-around items-center text-zinc-500 z-[100]">
+        <div onclick="switchMainView('home')" id="nav-home" class="flex flex-col items-center gap-1 nav-active cursor-pointer transition-all">
+            <i class="fas fa-house"></i><span class="text-[9px] font-bold">Home</span>
+        </div>
+        <div onclick="switchMainView('search')" id="nav-search" class="flex flex-col items-center gap-1 cursor-pointer transition-all">
+            <i class="fas fa-magnifying-glass"></i><span class="text-[9px] font-bold">Search</span>
+        </div>
+        <div onclick="toggleView('settings-view', true)" id="nav-lib" class="flex flex-col items-center gap-1 cursor-pointer transition-all">
+            <i class="fas fa-user-circle"></i><span class="text-[9px] font-bold">Profile</span>
+        </div>
     </footer>
 
     <script type="module">
@@ -111,67 +151,103 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
         let audioMain = new Audio();
-        let audioNature = new Audio();
-        let audioRain = new Audio();
+        let audioNature = new Audio("https://assets.mixkit.co/active_storage/sfx/2443/2443-preview.mp3");
+        let audioRain = new Audio("https://assets.mixkit.co/active_storage/sfx/2448/2448-preview.mp3");
         audioNature.loop = audioRain.loop = true;
+        
+        let allNohas = [];
 
-        window.toggleView = (id, show) => {
-            const el = document.getElementById(id);
-            if(show) { el.classList.add('active'); el.style.display = 'block'; }
-            else { el.classList.remove('active'); setTimeout(()=> el.style.display='none', 400); }
+        // Load Saved Profile
+        window.onload = () => {
+            const savedName = localStorage.getItem('labaik_name') || "Rai Daim";
+            const savedPic = localStorage.getItem('labaik_pic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
+            document.getElementById('username-input').value = savedName;
+            document.getElementById('header-avatar').src = document.getElementById('user-pic-large').src = savedPic;
+            document.getElementById('greeting-text').innerText = "Assalam-o-Alaika, " + savedName.split(' ')[0];
         };
 
-        // Logic: Jab list se click ho toh Mini player hte aur Full Player khule
-        window.setupPlayer = (s) => {
-            document.getElementById('m-art').src = document.getElementById('p-art').src = s.songPic;
-            document.getElementById('m-title').innerText = document.getElementById('p-title').innerText = s.name;
-            
-            // Foran Full Player kholna aur Mini player chupana
-            document.getElementById('mini-player').classList.add('hidden');
-            toggleView('playlist-view', true);
-            
-            audioMain.src = s.url.replace('dl=0', 'dl=1');
-            audioMain.play();
-            updateIcons('fas fa-pause');
+        window.saveProfile = () => {
+            const newName = document.getElementById('username-input').value;
+            localStorage.setItem('labaik_name', newName);
+            document.getElementById('greeting-text').innerText = "Assalam-o-Alaika, " + newName.split(' ')[0];
         };
 
-        window.openFullPlayer = () => {
-            document.getElementById('mini-player').classList.add('hidden');
-            toggleView('playlist-view', true);
-        };
-
-        window.closeFullPlayer = () => {
-            toggleView('playlist-view', false);
-            // Full player band hote hi mini player wapis aa jaye agar gaana chal raha ho
-            if(!audioMain.paused) {
-                document.getElementById('mini-player').classList.remove('hidden');
+        window.changeProfilePic = () => {
+            const url = prompt("Enter Image URL:");
+            if(url) {
+                localStorage.setItem('labaik_pic', url);
+                document.getElementById('header-avatar').src = document.getElementById('user-pic-large').src = url;
             }
         };
 
+        window.toggleView = (id, show) => {
+            document.getElementById(id).classList.toggle('active', show);
+            if(show) document.getElementById(id).style.display = 'block';
+        };
+
+        window.switchMainView = (view) => {
+            document.getElementById('home-content').classList.toggle('hidden', view !== 'home');
+            document.getElementById('search-content').classList.toggle('hidden', view !== 'search');
+            document.getElementById('nav-home').classList.toggle('nav-active', view === 'home');
+            document.getElementById('nav-search').classList.toggle('nav-active', view === 'search');
+        };
+
+        window.setupPlayer = (s) => {
+            document.getElementById('p-art').src = s.songPic;
+            document.getElementById('p-title').innerText = s.name;
+            audioMain.src = s.url.replace('dl=0', 'dl=1');
+            
+            // Triple Play with default 30% on click
+            audioMain.play();
+            audioNature.volume = 0.3; audioRain.volume = 0.3;
+            document.getElementById('vol-nature').value = 30; document.getElementById('vol-rain').value = 30;
+            audioNature.play(); audioRain.play();
+
+            toggleView('playlist-view', true);
+            updateIcons('fas fa-pause');
+        };
+
+        window.closeFullPlayer = () => toggleView('playlist-view', false);
+
         window.toggleAudio = () => {
-            if(audioMain.paused) { audioMain.play(); updateIcons('fas fa-pause'); }
-            else { audioMain.pause(); updateIcons('fas fa-play'); }
+            if(audioMain.paused) { audioMain.play(); audioNature.play(); audioRain.play(); updateIcons('fas fa-pause'); }
+            else { audioMain.pause(); audioNature.pause(); audioRain.pause(); updateIcons('fas fa-play'); }
         };
 
-        const updateIcons = (cls) => {
-            document.getElementById('play-btn-main').className = cls + (cls.includes('play') ? ' ml-1' : '');
-            document.getElementById('m-play').className = cls;
-        };
-
-        // Volume Controls
-        document.getElementById('vol-main').oninput = (e) => audioMain.volume = e.target.value / 100;
-        document.getElementById('vol-nature').oninput = (e) => { audioNature.volume = e.target.value / 100; if(audioNature.paused) audioNature.play(); };
-        document.getElementById('vol-rain').oninput = (e) => { audioRain.volume = e.target.value / 100; if(audioRain.paused) audioRain.play(); };
-
-        // Firebase Data
-        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
-            const feed = document.getElementById('noha-feed'); feed.innerHTML = '';
-            snap.forEach(d => {
-                const s = d.data();
-                feed.innerHTML += `<div class="flex items-center gap-4" onclick='setupPlayer(${JSON.stringify(s)})'>
+        window.doSearch = () => {
+            const q = document.getElementById('user-search').value.toLowerCase();
+            const res = document.getElementById('search-results'); res.innerHTML = '';
+            allNohas.filter(n => n.name.toLowerCase().includes(q)).forEach(s => {
+                res.innerHTML += `<div class="flex items-center gap-4 bg-[#282828] p-3 rounded-lg" onclick='setupPlayer(${JSON.stringify(s)})'>
                     <img src="${s.songPic}" class="w-12 h-12 rounded object-cover shadow-lg">
-                    <div class="flex-1"><h4 class="text-sm font-bold truncate">${s.name}</h4><p class="text-[10px] text-gray-500 uppercase">LABAIK NOHA</p></div>
+                    <div><p class="font-bold text-sm">${s.name}</p><p class="text-[10px] text-zinc-500 uppercase font-bold">Noha</p></div>
+                </div>`;
+            });
+        };
+
+        const updateIcons = (cls) => document.getElementById('play-btn-main').className = cls + (cls.includes('play') ? ' ml-1' : '');
+
+        // Mixer Logic
+        document.getElementById('vol-main').oninput = (e) => audioMain.volume = e.target.value / 100;
+        document.getElementById('vol-nature').oninput = (e) => {
+            audioNature.volume = e.target.value / 100;
+            document.getElementById('nature-icon').classList.toggle('text-[#1DB954]', e.target.value > 0);
+        };
+        document.getElementById('vol-rain').oninput = (e) => {
+            audioRain.volume = e.target.value / 100;
+            document.getElementById('rain-icon').classList.toggle('text-[#1DB954]', e.target.value > 0);
+        };
+
+        // Firebase Realtime
+        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+            allNohas = []; const feed = document.getElementById('noha-feed'); feed.innerHTML = '';
+            snap.forEach(d => {
+                const s = d.data(); allNohas.push(s);
+                feed.innerHTML += `<div class="flex items-center gap-4 active:scale-95 transition-all p-2 rounded-lg hover:bg-white/5" onclick='setupPlayer(${JSON.stringify(s)})'>
+                    <img src="${s.songPic}" class="w-14 h-14 rounded shadow-2xl object-cover">
+                    <div class="flex-1"><h4 class="text-sm font-bold truncate">${s.name}</h4><p class="text-[10px] text-zinc-500 uppercase tracking-widest">Devotional</p></div>
                 </div>`;
             });
         });
@@ -181,8 +257,8 @@
             const colors = ['#E8115B', '#8D67AB', '#1E3264', '#148A08']; let i = 0;
             snap.forEach(d => {
                 const c = d.data();
-                grid.innerHTML += `<div class="spotify-card" style="background: ${colors[i % 4]}">
-                    <span class="font-bold text-sm">${c.name}</span><img src="${c.pic}"></div>`;
+                grid.innerHTML += `<div class="spotify-card" style="background: ${colors[i % 4]}" onclick="switchMainView('search')">
+                    <span class="font-bold text-sm leading-tight">${c.name}</span><img src="${c.pic}"></div>`;
                 i++;
             });
         });
