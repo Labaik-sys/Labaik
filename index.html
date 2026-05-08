@@ -3,267 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LABAIK | Spotify Edition</title>
+    <title>LABAIK | Search Optimized</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --matte: #0A0A0A; --spotify: #1DB954; --card: #181818; }
-        body { background: var(--matte); color: white; font-family: 'Inter', sans-serif; margin: 0; overflow-x: hidden; }
+        :root { --imperial: #21393b; --deep: #162627; --pink: #e91e63; }
+        body { background: #000; color: white; font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
         
-        .view-layer { position: fixed; inset: 0; z-index: 200; transform: translateY(100%); transition: 0.5s cubic-bezier(0.3, 0, 0, 1); background: var(--matte); overflow-y: auto; }
-        .view-layer.active { transform: translateY(0); }
+        .app-frame { width: 100%; max-width: 450px; height: 100vh; background: var(--imperial); position: relative; overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.8); }
+        @media (min-width: 1024px) { .app-frame { height: 92vh; border-radius: 45px; border: 12px solid #1a1a1a; } }
+
+        .creator-card { background: var(--pink); border-radius: 24px; min-width: 240px; height: 140px; position: relative; overflow: hidden; margin-right: 20px; flex-shrink: 0; padding: 22px; }
+        .creator-card img { position: absolute; right: 0; bottom: 0; width: 115px; height: 100%; object-fit: cover; mask-image: linear-gradient(to left, black 60%, transparent); }
+
+        .layer { position: absolute; inset: 0; z-index: 800; transform: translateX(100%); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); background: var(--imperial); }
+        .layer.active { transform: translateX(0); }
         
-        .spotify-card { border-radius: 12px; padding: 16px; height: 120px; position: relative; overflow: hidden; cursor: pointer; transition: 0.3s; background: #282828; }
-        .spotify-card:hover { transform: translateY(-5px); }
-        .spotify-card img { position: absolute; width: 80px; height: 80px; right: -15px; bottom: -5px; transform: rotate(25deg); object-fit: cover; border-radius: 4px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        
-        .glass-header { background: linear-gradient(to bottom, #1db95433, var(--matte)); }
+        .glass-card { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; transition: 0.3s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 4px; border-radius: 4px; accent-color: var(--spotify); }
-        .nav-active { color: white !important; }
-        .fav-active { color: var(--spotify) !important; transform: scale(1.2); }
+        input[type="range"] { accent-color: #e91e63; }
     </style>
 </head>
-<body class="no-scrollbar">
+<body>
 
-    <div id="splash" class="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <h1 class="text-6xl font-black tracking-tighter text-white">LABAIK</h1>
-        <p class="text-[#1DB954] text-[10px] font-bold mt-4 tracking-[0.6em] uppercase">The Call of Devotion</p>
-    </div>
-
-    <div id="app-wrap" class="pb-32 opacity-0 transition-opacity duration-1000">
-        <div id="home-content" class="main-view p-6">
-            <header class="flex justify-between items-center mb-8">
-                <h1 id="greeting-text" class="text-2xl font-bold">Good Day</h1>
-                <div onclick="toggleView('settings-view', true)" class="cursor-pointer">
-                    <img id="header-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-9 h-9 rounded-full border border-zinc-700 object-cover">
+    <div class="app-frame" id="main-container">
+        
+        <div id="app-content" class="h-full flex flex-col">
+            <header class="p-8 pb-4 flex justify-between items-center">
+                <h2 class="text-3xl font-black italic tracking-tighter">LABAIK.</h2>
+                <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer shadow-lg active:scale-90 transition">
+                    <img id="top-pfp" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
                 </div>
             </header>
-            
-            <section class="mb-10">
-                <h2 class="text-xl font-bold mb-5">Featured Reciters</h2>
-                <div id="creator-grid" class="grid grid-cols-2 gap-4"></div>
-            </section>
 
-            <section>
-                <h2 class="text-xl font-bold mb-5">Trending Now</h2>
-                <div id="noha-feed" class="space-y-5"></div>
-            </section>
+            <div class="px-8 flex-1 overflow-y-auto no-scrollbar pb-32">
+                <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10 ring-1 ring-white/5">
+                    <i class="fas fa-search text-pink-500 text-sm"></i>
+                    <input type="text" id="main-search" placeholder="Search Nohas or Reciters..." 
+                           class="bg-transparent outline-none text-sm w-full font-semibold placeholder:text-white/20" 
+                           oninput="handleSearch(this.value)">
+                    <i id="clear-search" class="fas fa-times text-white/20 hidden cursor-pointer" onclick="clearSearch()"></i>
+                </div>
+
+                <nav class="flex gap-8 mb-8 text-[10px] font-black tracking-widest text-white/30 border-b border-white/5 pb-3">
+                    <span class="text-white border-b-2 border-white pb-3">ARCHIVE</span>
+                    <span onclick="toggleLayer('library-layer', true)" class="cursor-pointer">LIBRARY</span>
+                </nav>
+
+                <div id="main-sections">
+                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
+                    <div id="creator-row" class="flex overflow-x-auto no-scrollbar pb-4 mb-8"></div>
+
+                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">All Records</h3>
+                </div>
+                
+                <div id="song-feed" class="space-y-3">
+                    </div>
+            </div>
         </div>
 
-        <div id="search-content" class="main-view hidden p-6">
-            <h1 class="text-3xl font-bold mb-6">Search</h1>
-            <div class="relative mb-8">
-                <i class="fas fa-search absolute left-4 top-4 text-zinc-400"></i>
-                <input type="text" id="user-search" oninput="doSearch()" placeholder="Artist, songs, or podcasts" 
-                    class="w-full bg-[#242424] py-4 pl-12 pr-4 rounded-full text-white font-medium outline-none focus:ring-2 ring-white/20 transition-all">
-            </div>
-            <div id="search-results" class="grid grid-cols-1 gap-4"></div>
-        </div>
-    </div>
-
-    <div id="playlist-view" class="view-layer">
-        <div class="glass-header p-8 pb-12">
-            <header class="flex justify-between items-center mb-10">
-                <i class="fas fa-chevron-down text-xl" onclick="closeFullPlayer()"></i>
-                <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Playing Now</span>
-                <i class="fas fa-ellipsis-h opacity-60"></i>
-            </header>
-
-            <img id="p-art" class="w-full aspect-square max-w-[320px] mx-auto shadow-2xl mb-10 object-cover rounded-xl transition-all duration-500">
-            
-            <div class="mb-10">
-                <h1 id="p-title" class="text-3xl font-black mb-2 truncate">Noha Title</h1>
-                <p id="p-artist" class="text-[#1DB954] font-bold text-sm tracking-widest uppercase">Labaik Reciter</p>
-            </div>
-            
+        <div id="profile-layer" class="layer p-8">
             <div class="flex justify-between items-center mb-10">
-                <div class="flex gap-8 text-2xl text-zinc-500">
-                    <i id="fav-icon" class="far fa-heart transition-all" onclick="toggleFavorite()"></i>
-                    <i class="fas fa-share-nodes" onclick="shareApp()"></i>
+                <i class="fas fa-arrow-left text-xl opacity-30" onclick="toggleLayer('profile-layer', false)"></i>
+                <h3 class="text-[10px] font-black tracking-widest uppercase">Settings</h3>
+                <button onclick="saveSettings()" class="text-pink-500 font-bold text-xs">SAVE</button>
+            </div>
+            
+            <div class="flex flex-col items-center mb-10">
+                <div class="relative w-24 h-24 mb-4">
+                    <img id="profile-img" src="https://via.placeholder.com/100" class="w-full h-full rounded-full border-4 border-pink-500/10 object-cover">
+                    <label class="absolute bottom-0 right-0 bg-pink-500 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg">
+                        <i class="fas fa-camera text-xs"></i>
+                        <input type="file" class="hidden" onchange="updatePFP(this)">
+                    </label>
                 </div>
-                <button onclick="toggleAudio()" class="w-16 h-16 bg-[#1DB954] rounded-full flex items-center justify-center text-black text-3xl shadow-xl hover:scale-105 active:scale-95 transition-all">
-                    <i id="play-btn-main" class="fas fa-play ml-1"></i>
-                </button>
+                <h4 id="display-name-label" class="text-2xl font-black italic">Rai Daim</h4>
+                <p id="display-username-label" class="text-[10px] text-white/30 tracking-widest">@daim_rai</p>
             </div>
 
-            <div class="bg-white/5 border border-white/10 p-6 rounded-3xl">
-                <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-6 text-center">Customize Atmosphere</p>
-                <div class="space-y-6">
-                    <div class="flex items-center gap-4"><i class="fas fa-volume-high text-[#1DB954] w-5"></i><input type="range" id="vol-main" class="flex-1" value="100"></div>
-                    <div class="flex items-center gap-4"><i class="fas fa-wind text-zinc-500 w-5" id="nature-icon"></i><input type="range" id="vol-nature" class="flex-1" value="0"></div>
-                    <div class="flex items-center gap-4"><i class="fas fa-cloud-showers-heavy text-zinc-500 w-5" id="rain-icon"></i><input type="range" id="vol-rain" class="flex-1" value="0"></div>
+            <div class="space-y-4">
+                <div class="glass-card p-5">
+                    <p class="text-[8px] font-black text-white/20 uppercase mb-2">Full Name</p>
+                    <input type="text" id="name-input" class="bg-transparent outline-none text-sm w-full font-bold">
                 </div>
+                <div class="glass-card p-5">
+                    <p class="text-[8px] font-black text-white/20 uppercase mb-2">Username</p>
+                    <input type="text" id="username-input" class="bg-transparent outline-none text-sm w-full font-bold">
+                </div>
+                <button onclick="handleLogout()" class="w-full py-4 text-red-500 font-black text-[10px] tracking-widest mt-10 border border-red-500/10 rounded-2xl">LOGOUT</button>
             </div>
         </div>
-    </div>
 
-    <div id="settings-view" class="view-layer p-8">
-        <header class="flex items-center gap-6 mb-12">
-            <i class="fas fa-arrow-left text-xl" onclick="toggleView('settings-view', false)"></i>
-            <h2 class="text-xl font-bold">Account</h2>
-        </header>
-
-        <div class="flex flex-col items-center mb-12">
-            <div class="relative mb-6 group" onclick="changeProfilePic()">
-                <img id="user-pic-large" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" class="w-32 h-32 rounded-full border-4 border-[#1DB954] p-1 object-cover shadow-2xl">
-                <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-camera"></i></div>
+        <div id="player-layer" class="layer p-10 flex flex-col">
+            <i class="fas fa-chevron-down opacity-20 text-xl mb-12" onclick="toggleLayer('player-layer', false)"></i>
+            <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover">
+            <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter">--</h1>
+            <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-12">--</p>
+            
+            <div class="glass-card p-6 mb-10 space-y-6">
+                <div class="flex items-center gap-5"><i class="fas fa-wind text-white/20 w-4"></i><input type="range" id="vol-wind" class="flex-1" value="0"></div>
+                <div class="flex items-center gap-5"><i class="fas fa-cloud-showers-heavy text-white/20 w-4"></i><input type="range" id="vol-rain" class="flex-1" value="0"></div>
             </div>
-            <input type="text" id="username-input" onblur="saveProfile()" class="bg-transparent text-center text-3xl font-black outline-none border-b-2 border-transparent focus:border-[#1DB954] transition-all w-full px-4" value="Rai Daim">
-            <p class="text-zinc-500 text-sm mt-2">Tap name to edit</p>
-        </div>
 
-        <div class="space-y-4">
-            <button class="w-full bg-[#242424] p-4 rounded-xl flex justify-between items-center" onclick="alert('Labaik Cloud Sync is Active!')">
-                <span class="font-bold">Premium Subscription</span>
-                <span class="text-[#1DB954] text-xs font-black">ACTIVE</span>
+            <button onclick="toggleAudio()" class="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center text-black text-2xl shadow-xl active:scale-95 transition">
+                <i id="p-play" class="fas fa-play ml-1"></i>
             </button>
         </div>
 
-        <div class="mt-20 text-center">
-            <p class="text-[10px] tracking-[0.8em] font-black uppercase text-zinc-600">Built By ZAK</p>
+        <div id="library-layer" class="layer p-8">
+            <i class="fas fa-chevron-left mb-10 opacity-30" onclick="toggleLayer('library-layer', false)"></i>
+            <h2 class="text-3xl font-black italic mb-10">LIBRARY.</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass-card aspect-square flex flex-col items-center justify-center gap-4">
+                    <i class="fas fa-microphone text-3xl text-pink-500"></i>
+                    <p class="text-[10px] font-black uppercase">Nohas</p>
+                </div>
+                <div class="glass-card aspect-square flex flex-col items-center justify-center gap-4 opacity-30 relative">
+                    <span class="absolute top-3 right-3 text-[7px] bg-white text-black px-2 py-1 rounded font-black">COMING SOON</span>
+                    <i class="fas fa-book-quran text-3xl text-white/10"></i>
+                    <p class="text-[10px] font-black uppercase">Kalam</p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <footer class="fixed bottom-0 w-full h-20 bg-black/90 backdrop-blur-md border-t border-white/5 flex justify-around items-center text-zinc-500 z-[100]">
-        <div onclick="switchMainView('home')" id="nav-home" class="flex flex-col items-center gap-1 nav-active cursor-pointer transition-all">
-            <i class="fas fa-house"></i><span class="text-[9px] font-bold">Home</span>
-        </div>
-        <div onclick="switchMainView('search')" id="nav-search" class="flex flex-col items-center gap-1 cursor-pointer transition-all">
-            <i class="fas fa-magnifying-glass"></i><span class="text-[9px] font-bold">Search</span>
-        </div>
-        <div onclick="toggleView('settings-view', true)" id="nav-lib" class="flex flex-col items-center gap-1 cursor-pointer transition-all">
-            <i class="fas fa-user-circle"></i><span class="text-[9px] font-bold">Profile</span>
-        </div>
-    </footer>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyA1tNtHLr5xiTFuU9qvEEc6IwmQFqWJLU4",
-            authDomain: "zaigham-apps.firebaseapp.com",
-            projectId: "zaigham-apps",
-            appId: "1:640695849473:web:8720ecd76e0634661a2600"
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyA1tNtHLr5xiTFuU9qvEEc6IwmQFqWJLU4", authDomain: "zaigham-apps.firebaseapp.com", projectId: "zaigham-apps", appId: "1:640695849473:web:8720ecd76e0634661a2600" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         let audioMain = new Audio();
-        let audioNature = new Audio("https://assets.mixkit.co/active_storage/sfx/2443/2443-preview.mp3");
-        let audioRain = new Audio("https://assets.mixkit.co/active_storage/sfx/2448/2448-preview.mp3");
-        audioNature.loop = audioRain.loop = true;
+        let audioWind = new Audio("https://www.soundjay.com/nature/wind-01.mp3");
+        let audioRain = new Audio("https://www.soundjay.com/nature/rain-01.mp3");
+        audioWind.loop = audioRain.loop = true;
         
-        let allNohas = [];
+        let allSongs = [];
 
-        // Load Saved Profile
-        window.onload = () => {
-            const savedName = localStorage.getItem('labaik_name') || "Rai Daim";
-            const savedPic = localStorage.getItem('labaik_pic') || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
-            document.getElementById('username-input').value = savedName;
-            document.getElementById('header-avatar').src = document.getElementById('user-pic-large').src = savedPic;
-            document.getElementById('greeting-text').innerText = "Assalam-o-Alaika, " + savedName.split(' ')[0];
-        };
+        window.toggleLayer = (id, show) => document.getElementById(id).classList.toggle('active', show);
 
-        window.saveProfile = () => {
-            const newName = document.getElementById('username-input').value;
-            localStorage.setItem('labaik_name', newName);
-            document.getElementById('greeting-text').innerText = "Assalam-o-Alaika, " + newName.split(' ')[0];
-        };
+        // --- IMPROVED SEARCH LOGIC ---
+        window.handleSearch = (val) => {
+            const clearBtn = document.getElementById('clear-search');
+            const sections = document.getElementById('main-sections');
+            
+            if (val.trim() === "") {
+                clearBtn.classList.add('hidden');
+                sections.style.display = 'block';
+                renderSongs(allSongs);
+                return;
+            }
 
-        window.changeProfilePic = () => {
-            const url = prompt("Enter Image URL:");
-            if(url) {
-                localStorage.setItem('labaik_pic', url);
-                document.getElementById('header-avatar').src = document.getElementById('user-pic-large').src = url;
+            clearBtn.classList.remove('hidden');
+            sections.style.display = 'none'; // Hide reciters while searching
+            
+            const results = allSongs.filter(s => 
+                s.name.toLowerCase().includes(val.toLowerCase()) || 
+                (s.reciter && s.reciter.toLowerCase().includes(val.toLowerCase()))
+            );
+            
+            renderSongs(results);
+            
+            if (results.length === 0) {
+                document.getElementById('song-feed').innerHTML = `<div class="text-center py-20 opacity-20 text-xs font-black tracking-widest uppercase">No Nohas Found</div>`;
             }
         };
 
-        window.toggleView = (id, show) => {
-            document.getElementById(id).classList.toggle('active', show);
-            if(show) document.getElementById(id).style.display = 'block';
+        window.clearSearch = () => {
+            document.getElementById('main-search').value = "";
+            handleSearch("");
         };
 
-        window.switchMainView = (view) => {
-            document.getElementById('home-content').classList.toggle('hidden', view !== 'home');
-            document.getElementById('search-content').classList.toggle('hidden', view !== 'search');
-            document.getElementById('nav-home').classList.toggle('nav-active', view === 'home');
-            document.getElementById('nav-search').classList.toggle('nav-active', view === 'search');
+        const renderSongs = (data) => {
+            const feed = document.getElementById('song-feed');
+            feed.innerHTML = '';
+            data.forEach(s => {
+                const div = document.createElement('div');
+                div.className = "glass-card p-4 flex items-center gap-5 active:bg-white/5 transition cursor-pointer border border-white/5";
+                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase tracking-widest">${s.reciter || 'Digital Record'}</p></div><i class="fas fa-play text-[10px] opacity-10"></i>`;
+                div.onclick = () => setupPlayer(s);
+                feed.appendChild(div);
+            });
+        };
+
+        // --- FIREBASE SYNC ---
+        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+            allSongs = [];
+            snap.forEach(d => allSongs.push(d.data()));
+            if(document.getElementById('main-search').value === "") renderSongs(allSongs);
+        });
+
+        onSnapshot(collection(db, "creators"), (snap) => {
+            const row = document.getElementById('creator-row'); row.innerHTML = '';
+            snap.forEach(d => {
+                const c = d.data();
+                row.innerHTML += `<div class="creator-card" onclick="handleSearch('${c.name}')"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
+            });
+        });
+
+        // --- SETTINGS ---
+        window.saveSettings = () => {
+            const name = document.getElementById('name-input').value;
+            const user = document.getElementById('username-input').value;
+            if(name) localStorage.setItem('l_name', name);
+            if(user) localStorage.setItem('l_user', user);
+            loadProfile();
+            toggleLayer('profile-layer', false);
+        };
+
+        window.updatePFP = (input) => {
+            const reader = new FileReader();
+            reader.onload = (e) => { localStorage.setItem('l_pfp', e.target.result); loadProfile(); };
+            reader.readAsDataURL(input.files[0]);
+        };
+
+        const loadProfile = () => {
+            const name = localStorage.getItem('l_name') || "Rai Daim";
+            const user = localStorage.getItem('l_user') || "daim_rai";
+            const pfp = localStorage.getItem('l_pfp') || "https://via.placeholder.com/100";
+            document.getElementById('display-name-label').innerText = name;
+            document.getElementById('display-username-label').innerText = "@" + user;
+            document.getElementById('name-input').value = name;
+            document.getElementById('username-input').value = user;
+            document.getElementById('profile-img').src = document.getElementById('top-pfp').src = pfp;
         };
 
         window.setupPlayer = (s) => {
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
-            audioMain.src = s.url.replace('dl=0', 'dl=1');
-            
-            // Triple Play with default 30% on click
+            document.getElementById('p-artist').innerText = s.reciter || "LABAIK ARCHIVE";
+            audioMain.src = s.url.replace('dl=0', 'raw=1');
             audioMain.play();
-            audioNature.volume = 0.3; audioRain.volume = 0.3;
-            document.getElementById('vol-nature').value = 30; document.getElementById('vol-rain').value = 30;
-            audioNature.play(); audioRain.play();
-
-            toggleView('playlist-view', true);
-            updateIcons('fas fa-pause');
+            document.getElementById('p-play').className = "fas fa-pause";
+            toggleLayer('player-layer', true);
         };
-
-        window.closeFullPlayer = () => toggleView('playlist-view', false);
 
         window.toggleAudio = () => {
-            if(audioMain.paused) { audioMain.play(); audioNature.play(); audioRain.play(); updateIcons('fas fa-pause'); }
-            else { audioMain.pause(); audioNature.pause(); audioRain.pause(); updateIcons('fas fa-play'); }
+            if(audioMain.paused) { audioMain.play(); document.getElementById('p-play').className = "fas fa-pause"; }
+            else { audioMain.pause(); document.getElementById('p-play').className = "fas fa-play ml-1"; }
         };
 
-        window.doSearch = () => {
-            const q = document.getElementById('user-search').value.toLowerCase();
-            const res = document.getElementById('search-results'); res.innerHTML = '';
-            allNohas.filter(n => n.name.toLowerCase().includes(q)).forEach(s => {
-                res.innerHTML += `<div class="flex items-center gap-4 bg-[#282828] p-3 rounded-lg" onclick='setupPlayer(${JSON.stringify(s)})'>
-                    <img src="${s.songPic}" class="w-12 h-12 rounded object-cover shadow-lg">
-                    <div><p class="font-bold text-sm">${s.name}</p><p class="text-[10px] text-zinc-500 uppercase font-bold">Noha</p></div>
-                </div>`;
-            });
-        };
+        document.getElementById('vol-wind').oninput = (e) => { audioWind.volume = e.target.value / 100; if(audioWind.paused) audioWind.play(); };
+        document.getElementById('vol-rain').oninput = (e) => { audioRain.volume = e.target.value / 100; if(audioRain.paused) audioRain.play(); };
 
-        const updateIcons = (cls) => document.getElementById('play-btn-main').className = cls + (cls.includes('play') ? ' ml-1' : '');
-
-        // Mixer Logic
-        document.getElementById('vol-main').oninput = (e) => audioMain.volume = e.target.value / 100;
-        document.getElementById('vol-nature').oninput = (e) => {
-            audioNature.volume = e.target.value / 100;
-            document.getElementById('nature-icon').classList.toggle('text-[#1DB954]', e.target.value > 0);
-        };
-        document.getElementById('vol-rain').oninput = (e) => {
-            audioRain.volume = e.target.value / 100;
-            document.getElementById('rain-icon').classList.toggle('text-[#1DB954]', e.target.value > 0);
-        };
-
-        // Firebase Realtime
-        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
-            allNohas = []; const feed = document.getElementById('noha-feed'); feed.innerHTML = '';
-            snap.forEach(d => {
-                const s = d.data(); allNohas.push(s);
-                feed.innerHTML += `<div class="flex items-center gap-4 active:scale-95 transition-all p-2 rounded-lg hover:bg-white/5" onclick='setupPlayer(${JSON.stringify(s)})'>
-                    <img src="${s.songPic}" class="w-14 h-14 rounded shadow-2xl object-cover">
-                    <div class="flex-1"><h4 class="text-sm font-bold truncate">${s.name}</h4><p class="text-[10px] text-zinc-500 uppercase tracking-widest">Devotional</p></div>
-                </div>`;
-            });
-        });
-
-        onSnapshot(collection(db, "creators"), (snap) => {
-            const grid = document.getElementById('creator-grid'); grid.innerHTML = '';
-            const colors = ['#E8115B', '#8D67AB', '#1E3264', '#148A08']; let i = 0;
-            snap.forEach(d => {
-                const c = d.data();
-                grid.innerHTML += `<div class="spotify-card" style="background: ${colors[i % 4]}" onclick="switchMainView('search')">
-                    <span class="font-bold text-sm leading-tight">${c.name}</span><img src="${c.pic}"></div>`;
-                i++;
-            });
-        });
-
-        setTimeout(() => { document.getElementById('splash').style.opacity = '0'; setTimeout(() => { document.getElementById('splash').style.display = 'none'; document.getElementById('app-wrap').style.opacity = '1'; }, 700); }, 2500);
+        window.handleLogout = () => { localStorage.clear(); location.reload(); };
+        window.onload = loadProfile;
     </script>
 </body>
 </html>
