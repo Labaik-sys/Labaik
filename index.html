@@ -31,6 +31,9 @@
 
         .category-chip { flex-shrink: 0; padding: 8px 16px; border-radius: 50px; font-size: 8px; font-weight: 900; letter-spacing: 0.1em; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
         .category-chip.active { background: white; color: black; border-color: white; }
+
+        /* Multi-select selection indicator */
+        .glass-card.selected { border-color: var(--pink); background: rgba(233, 30, 99, 0.1); }
     </style>
 </head>
 <body>
@@ -42,8 +45,11 @@
         <div id="app-content" class="h-full flex flex-col">
             <header class="p-8 pb-4 flex justify-between items-center">
                 <h2 class="text-3xl font-black italic tracking-tighter">LABAIK.</h2>
-                <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer">
-                    <img id="top-pfp" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
+                <div class="flex items-center gap-4">
+                    <i onclick="toggleLayer('sleep-layer', true)" class="fas fa-moon opacity-30 cursor-pointer hover:opacity-100 text-lg"></i>
+                    <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer">
+                        <img id="top-pfp" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
+                    </div>
                 </div>
             </header>
 
@@ -66,6 +72,30 @@
                 
                 <div id="song-feed" class="space-y-3"></div>
             </div>
+        </div>
+
+        <!-- SLEEP MODE LAYER -->
+        <div id="sleep-layer" class="layer p-8 flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('sleep-layer', false)"></i>
+                <h3 class="text-[10px] font-black tracking-widest text-pink-500">SLEEP MODE</h3>
+            </div>
+            
+            <div class="bg-black/20 p-6 rounded-3xl border border-white/5 mb-8">
+                <p class="text-[9px] font-black text-white/30 uppercase mb-4 tracking-widest">Select Timer (Hours)</p>
+                <div class="flex items-center gap-4">
+                    <input type="range" id="sleep-range" min="1" max="24" value="1" class="flex-1 accent-pink-500" oninput="document.getElementById('hr-val').innerText = this.value">
+                    <span class="text-2xl font-black italic w-12 text-right"><span id="hr-val">1</span>H</span>
+                </div>
+            </div>
+
+            <p class="text-[9px] font-black text-white/30 uppercase mb-4 tracking-widest">Choose Records for Loop (<span id="sel-count">0</span>)</p>
+            <div id="sleep-select-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 mb-6">
+                <!-- Populated via JS -->
+            </div>
+
+            <button id="start-sleep-btn" class="w-full py-5 bg-pink-500 text-white rounded-3xl font-black tracking-widest uppercase shadow-lg active:scale-95 transition-all">Start Loop Timer</button>
+            <button id="stop-timer-btn" class="hidden w-full py-5 bg-white text-black rounded-3xl font-black tracking-widest uppercase mt-4" onclick="stopSleepTimer()">Stop Active Timer</button>
         </div>
 
         <!-- OPTIONS DRAWER -->
@@ -163,6 +193,10 @@
         let musicQueue = [];
         let currentIndex = -1;
 
+        // Sleep Mode State
+        let selectedForSleep = [];
+        let sleepTimerRef = null;
+
         window.handleSearch = (val) => {
             const query = val.toLowerCase();
             const filtered = allSongs.filter(s => 
@@ -207,7 +241,66 @@
             document.getElementById('stop-peace-btn').classList.add('hidden');
         };
 
-        window.toggleLayer = (id, show) => document.getElementById(id).classList.toggle('active', show);
+        window.toggleLayer = (id, show) => {
+            if(id === 'sleep-layer' && show) renderSleepList();
+            document.getElementById(id).classList.toggle('active', show);
+        };
+
+        // SLEEP MODE LOGIC
+        const renderSleepList = () => {
+            const list = document.getElementById('sleep-select-list');
+            list.innerHTML = '';
+            allSongs.forEach(s => {
+                const isSelected = selectedForSleep.some(item => item.url === s.url);
+                const div = document.createElement('div');
+                div.className = `glass-card p-3 flex items-center gap-4 cursor-pointer transition-all ${isSelected ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <img src="${s.songPic}" class="w-10 h-10 rounded-lg object-cover">
+                    <div class="flex-1">
+                        <h4 class="text-[10px] font-bold truncate">${s.name}</h4>
+                        <p class="text-[7px] opacity-30 uppercase">${s.reciter || 'Archive'}</p>
+                    </div>
+                    ${isSelected ? '<i class="fas fa-check-circle text-pink-500"></i>' : '<i class="far fa-circle opacity-20"></i>'}
+                `;
+                div.onclick = () => {
+                    if(isSelected) {
+                        selectedForSleep = selectedForSleep.filter(item => item.url !== s.url);
+                    } else {
+                        selectedForSleep.push(s);
+                    }
+                    document.getElementById('sel-count').innerText = selectedForSleep.length;
+                    renderSleepList();
+                };
+                list.appendChild(div);
+            });
+        };
+
+        document.getElementById('start-sleep-btn').onclick = () => {
+            if(selectedForSleep.length === 0) return alert("Select records for loop");
+            
+            const hours = parseInt(document.getElementById('sleep-range').value);
+            musicQueue = [...selectedForSleep];
+            currentIndex = 0;
+            setupPlayer(musicQueue[0]);
+
+            if(sleepTimerRef) clearTimeout(sleepTimerRef);
+            sleepTimerRef = setTimeout(() => {
+                stopSleepTimer();
+                alert("Sleep Timer Ended");
+            }, hours * 3600000);
+
+            document.getElementById('start-sleep-btn').innerText = "TIMER RUNNING (" + hours + "H)";
+            document.getElementById('stop-timer-btn').classList.remove('hidden');
+            toggleLayer('sleep-layer', false);
+        };
+
+        window.stopSleepTimer = () => {
+            clearTimeout(sleepTimerRef);
+            sleepTimerRef = null;
+            audioMain.pause();
+            document.getElementById('start-sleep-btn').innerText = "Start Loop Timer";
+            document.getElementById('stop-timer-btn').classList.add('hidden');
+        };
 
         window.openOptions = (s) => {
             const drawer = document.getElementById('option-drawer');
@@ -254,9 +347,11 @@
             else { audioMain.pause(); document.getElementById('p-play').className = "fas fa-play ml-1"; }
         };
 
-        window.nextTrack = () => { if (currentIndex < musicQueue.length - 1) { currentIndex++; setupPlayer(musicQueue[currentIndex]); } };
-        window.prevTrack = () => { if (currentIndex > 0) { currentIndex--; setupPlayer(musicQueue[currentIndex]); } };
-        audioMain.onended = () => { if(currentIndex < musicQueue.length -1) nextTrack(); };
+        window.nextTrack = () => { 
+            if (currentIndex < musicQueue.length - 1) { 
+                currentIndex++; 
+                setupPlayer(musicmusicQueue[currentIndex]); } };
+        audioMain.onended = () => { nextTrack(); };
 
         const renderSongs = (data) => {
             const feed = document.getElementById('song-feed');
@@ -322,5 +417,4 @@
         window.onload = loadProfile;
     </script>
 </body>
-    </html>
-    
+</html
