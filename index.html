@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LABAIK | Search Optimized</title>
+    <title>LABAIK | Digital Queue OS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --imperial: #21393b; --deep: #162627; --pink: #e91e63; }
+        :root { --imperial: #21393b; --pink: #e91e63; }
         body { background: #000; color: white; font-family: 'Inter', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
         
         .app-frame { width: 100%; max-width: 450px; height: 100vh; background: var(--imperial); position: relative; overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.8); }
         @media (min-width: 1024px) { .app-frame { height: 92vh; border-radius: 45px; border: 12px solid #1a1a1a; } }
+
+        /* Queue Notification */
+        #queue-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--pink); color: white; padding: 10px 20px; border-radius: 50px; font-size: 10px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        .book-card { background: linear-gradient(135deg, #e91e63, #2196f3); border-radius: 24px; padding: 20px; position: relative; overflow: hidden; min-height: 180px; }
+        .book-card img { position: absolute; right: -15px; bottom: -15px; width: 110px; height: 150px; object-fit: cover; transform: rotate(-10deg); border-radius: 12px; }
 
         .creator-card { background: var(--pink); border-radius: 24px; min-width: 240px; height: 140px; position: relative; overflow: hidden; margin-right: 20px; flex-shrink: 0; padding: 22px; }
         .creator-card img { position: absolute; right: 0; bottom: 0; width: 115px; height: 100%; object-fit: cover; mask-image: linear-gradient(to left, black 60%, transparent); }
@@ -21,28 +27,26 @@
         
         .glass-card { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; transition: 0.3s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        input[type="range"] { accent-color: #e91e63; }
     </style>
 </head>
 <body>
 
     <div class="app-frame" id="main-container">
         
+        <div id="queue-toast">ADDED TO QUEUE</div>
+
         <div id="app-content" class="h-full flex flex-col">
             <header class="p-8 pb-4 flex justify-between items-center">
                 <h2 class="text-3xl font-black italic tracking-tighter">LABAIK.</h2>
-                <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer shadow-lg active:scale-90 transition">
+                <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer">
                     <img id="top-pfp" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
                 </div>
             </header>
 
             <div class="px-8 flex-1 overflow-y-auto no-scrollbar pb-32">
-                <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10 ring-1 ring-white/5">
-                    <i class="fas fa-search text-pink-500 text-sm"></i>
-                    <input type="text" id="main-search" placeholder="Search Nohas or Reciters..." 
-                           class="bg-transparent outline-none text-sm w-full font-semibold placeholder:text-white/20" 
-                           oninput="handleSearch(this.value)">
-                    <i id="clear-search" class="fas fa-times text-white/20 hidden cursor-pointer" onclick="clearSearch()"></i>
+                <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10">
+                    <i class="fas fa-search text-pink-500"></i>
+                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold" oninput="handleSearch(this.value)">
                 </div>
 
                 <nav class="flex gap-8 mb-8 text-[10px] font-black tracking-widest text-white/30 border-b border-white/5 pb-3">
@@ -53,77 +57,66 @@
                 <div id="main-sections">
                     <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
                     <div id="creator-row" class="flex overflow-x-auto no-scrollbar pb-4 mb-8"></div>
-
-                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">All Records</h3>
+                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Records</h3>
                 </div>
                 
-                <div id="song-feed" class="space-y-3">
-                    </div>
+                <div id="song-feed" class="space-y-3"></div>
             </div>
         </div>
 
-        <div id="profile-layer" class="layer p-8">
-            <div class="flex justify-between items-center mb-10">
-                <i class="fas fa-arrow-left text-xl opacity-30" onclick="toggleLayer('profile-layer', false)"></i>
-                <h3 class="text-[10px] font-black tracking-widest uppercase">Settings</h3>
-                <button onclick="saveSettings()" class="text-pink-500 font-bold text-xs">SAVE</button>
-            </div>
-            
-            <div class="flex flex-col items-center mb-10">
-                <div class="relative w-24 h-24 mb-4">
-                    <img id="profile-img" src="https://via.placeholder.com/100" class="w-full h-full rounded-full border-4 border-pink-500/10 object-cover">
-                    <label class="absolute bottom-0 right-0 bg-pink-500 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-lg">
-                        <i class="fas fa-camera text-xs"></i>
-                        <input type="file" class="hidden" onchange="updatePFP(this)">
-                    </label>
+        <div id="option-drawer" class="fixed inset-0 z-[1500] bg-black/80 flex flex-col justify-end transition-all duration-300 opacity-0 pointer-events-none">
+            <div class="bg-white text-black p-8 rounded-t-[40px] space-y-4">
+                <div class="flex items-center gap-4 mb-4 pb-4 border-b">
+                    <img id="opt-art" class="w-12 h-12 rounded-lg object-cover">
+                    <h4 id="opt-title" class="font-black text-sm truncate">--</h4>
                 </div>
-                <h4 id="display-name-label" class="text-2xl font-black italic">Rai Daim</h4>
-                <p id="display-username-label" class="text-[10px] text-white/30 tracking-widest">@daim_rai</p>
-            </div>
-
-            <div class="space-y-4">
-                <div class="glass-card p-5">
-                    <p class="text-[8px] font-black text-white/20 uppercase mb-2">Full Name</p>
-                    <input type="text" id="name-input" class="bg-transparent outline-none text-sm w-full font-bold">
-                </div>
-                <div class="glass-card p-5">
-                    <p class="text-[8px] font-black text-white/20 uppercase mb-2">Username</p>
-                    <input type="text" id="username-input" class="bg-transparent outline-none text-sm w-full font-bold">
-                </div>
-                <button onclick="handleLogout()" class="w-full py-4 text-red-500 font-black text-[10px] tracking-widest mt-10 border border-red-500/10 rounded-2xl">LOGOUT</button>
+                <button id="btn-play-now" class="w-full bg-black text-white py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3">
+                    <i class="fas fa-play"></i> PLAY NOW
+                </button>
+                <button id="btn-add-queue" class="w-full bg-gray-100 text-black py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3">
+                    <i class="fas fa-list-ul"></i> ADD TO QUEUE
+                </button>
+                <button onclick="closeOptions()" class="w-full text-[10px] font-black tracking-widest uppercase opacity-40 pt-2">Cancel</button>
             </div>
         </div>
 
         <div id="player-layer" class="layer p-10 flex flex-col">
-            <i class="fas fa-chevron-down opacity-20 text-xl mb-12" onclick="toggleLayer('player-layer', false)"></i>
-            <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover">
-            <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter">--</h1>
-            <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-12">--</p>
-            
-            <div class="glass-card p-6 mb-10 space-y-6">
-                <div class="flex items-center gap-5"><i class="fas fa-wind text-white/20 w-4"></i><input type="range" id="vol-wind" class="flex-1" value="0"></div>
-                <div class="flex items-center gap-5"><i class="fas fa-cloud-showers-heavy text-white/20 w-4"></i><input type="range" id="vol-rain" class="flex-1" value="0"></div>
+            <div class="flex justify-between items-center mb-10">
+                <i class="fas fa-chevron-down opacity-20 text-xl" onclick="toggleLayer('player-layer', false)"></i>
+                <div class="flex flex-col items-center">
+                    <span class="text-[8px] font-black text-white/20 tracking-widest uppercase">Now Playing</span>
+                    <span id="queue-status" class="text-[7px] text-pink-500 font-black">--</span>
+                </div>
+                <i class="fas fa-random opacity-20" id="shuffle-btn"></i>
             </div>
-
-            <button onclick="toggleAudio()" class="mx-auto w-20 h-20 bg-white rounded-full flex items-center justify-center text-black text-2xl shadow-xl active:scale-95 transition">
-                <i id="p-play" class="fas fa-play ml-1"></i>
-            </button>
+            
+            <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover border border-white/5">
+            <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter mb-2">--</h1>
+            <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-20">Archive Record</p>
+            
+            <div class="flex items-center justify-between px-4">
+                <i class="fas fa-step-backward text-xl opacity-30" onclick="prevTrack()"></i>
+                <button onclick="toggleAudio()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-black text-3xl shadow-xl active:scale-90 transition">
+                    <i id="p-play" class="fas fa-play ml-1"></i>
+                </button>
+                <i class="fas fa-step-forward text-xl opacity-30" onclick="nextTrack()"></i>
+            </div>
         </div>
 
-        <div id="library-layer" class="layer p-8">
-            <i class="fas fa-chevron-left mb-10 opacity-30" onclick="toggleLayer('library-layer', false)"></i>
-            <h2 class="text-3xl font-black italic mb-10">LIBRARY.</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="glass-card aspect-square flex flex-col items-center justify-center gap-4">
-                    <i class="fas fa-microphone text-3xl text-pink-500"></i>
-                    <p class="text-[10px] font-black uppercase">Nohas</p>
-                </div>
-                <div class="glass-card aspect-square flex flex-col items-center justify-center gap-4 opacity-30 relative">
-                    <span class="absolute top-3 right-3 text-[7px] bg-white text-black px-2 py-1 rounded font-black">COMING SOON</span>
-                    <i class="fas fa-book-quran text-3xl text-white/10"></i>
-                    <p class="text-[10px] font-black uppercase">Kalam</p>
-                </div>
+        <div id="library-layer" class="layer p-8 overflow-y-auto no-scrollbar">
+            <i class="fas fa-chevron-left opacity-30 mb-8" onclick="toggleLayer('library-layer', false)"></i>
+            <h2 class="text-3xl font-black italic mb-8">LIBRARY.</h2>
+            <div id="book-feed" class="space-y-6"></div>
+        </div>
+        
+        <div id="profile-layer" class="layer p-8">
+            <i class="fas fa-arrow-left opacity-30 mb-10" onclick="toggleLayer('profile-layer', false)"></i>
+            <div class="flex flex-col items-center mb-10">
+                <img id="profile-img" src="https://via.placeholder.com/100" class="w-24 h-24 rounded-full border-4 border-pink-500 object-cover mb-4">
+                <h4 id="display-name-label" class="text-2xl font-black italic">--</h4>
             </div>
+            <input type="text" id="name-input" class="bg-black/20 p-5 rounded-2xl w-full outline-none font-bold text-sm mb-4" placeholder="Edit Name" onblur="saveSettings()">
+            <button onclick="handleLogout()" class="w-full py-4 text-red-500 font-black text-[10px] tracking-widest mt-10 border border-red-500/10 rounded-2xl">LOGOUT</button>
         </div>
 
     </div>
@@ -137,104 +130,102 @@
         const db = getFirestore(app);
 
         let audioMain = new Audio();
-        let audioWind = new Audio("https://www.soundjay.com/nature/wind-01.mp3");
-        let audioRain = new Audio("https://www.soundjay.com/nature/rain-01.mp3");
-        audioWind.loop = audioRain.loop = true;
-        
         let allSongs = [];
+        let musicQueue = [];
+        let currentIndex = -1;
 
         window.toggleLayer = (id, show) => document.getElementById(id).classList.toggle('active', show);
 
-        // --- IMPROVED SEARCH LOGIC ---
-        window.handleSearch = (val) => {
-            const clearBtn = document.getElementById('clear-search');
-            const sections = document.getElementById('main-sections');
+        // --- QUEUE SYSTEM ---
+        window.openOptions = (s) => {
+            const drawer = document.getElementById('option-drawer');
+            document.getElementById('opt-art').src = s.songPic;
+            document.getElementById('opt-title').innerText = s.name;
+            drawer.classList.remove('pointer-events-none');
+            drawer.style.opacity = '1';
             
-            if (val.trim() === "") {
-                clearBtn.classList.add('hidden');
-                sections.style.display = 'block';
-                renderSongs(allSongs);
-                return;
-            }
+            document.getElementById('btn-play-now').onclick = () => { playNow(s); closeOptions(); };
+            document.getElementById('btn-add-queue').onclick = () => { addToQueue(s); closeOptions(); };
+        };
 
-            clearBtn.classList.remove('hidden');
-            sections.style.display = 'none'; // Hide reciters while searching
-            
-            const results = allSongs.filter(s => 
-                s.name.toLowerCase().includes(val.toLowerCase()) || 
-                (s.reciter && s.reciter.toLowerCase().includes(val.toLowerCase()))
-            );
-            
-            renderSongs(results);
-            
-            if (results.length === 0) {
-                document.getElementById('song-feed').innerHTML = `<div class="text-center py-20 opacity-20 text-xs font-black tracking-widest uppercase">No Nohas Found</div>`;
+        window.closeOptions = () => {
+            const drawer = document.getElementById('option-drawer');
+            drawer.style.opacity = '0';
+            drawer.classList.add('pointer-events-none');
+        };
+
+        const playNow = (s) => {
+            musicQueue = [s]; currentIndex = 0;
+            setupPlayer(s);
+        };
+
+        const addToQueue = (s) => {
+            musicQueue.push(s);
+            const toast = document.getElementById('queue-toast');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2000);
+        };
+
+        const nextTrack = () => {
+            if (currentIndex < musicQueue.length - 1) {
+                currentIndex++;
+                setupPlayer(musicQueue[currentIndex]);
             }
         };
 
-        window.clearSearch = () => {
-            document.getElementById('main-search').value = "";
-            handleSearch("");
+        const prevTrack = () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                setupPlayer(musicQueue[currentIndex]);
+            }
         };
 
+        audioMain.onended = () => { if(currentIndex < musicQueue.length -1) nextTrack(); };
+
+        // --- RENDER & DATA ---
         const renderSongs = (data) => {
             const feed = document.getElementById('song-feed');
-            feed.innerHTML = '';
+            feed.innerHTML = data.length ? '' : '<p class="opacity-10 text-center py-10">Waiting...</p>';
             data.forEach(s => {
                 const div = document.createElement('div');
-                div.className = "glass-card p-4 flex items-center gap-5 active:bg-white/5 transition cursor-pointer border border-white/5";
-                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase tracking-widest">${s.reciter || 'Digital Record'}</p></div><i class="fas fa-play text-[10px] opacity-10"></i>`;
-                div.onclick = () => setupPlayer(s);
+                div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5";
+                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
+                div.onclick = () => openOptions(s);
                 feed.appendChild(div);
             });
         };
 
-        // --- FIREBASE SYNC ---
         onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
-            allSongs = [];
-            snap.forEach(d => allSongs.push(d.data()));
-            if(document.getElementById('main-search').value === "") renderSongs(allSongs);
+            allSongs = []; snap.forEach(d => allSongs.push(d.data()));
+            renderSongs(allSongs);
         });
 
         onSnapshot(collection(db, "creators"), (snap) => {
             const row = document.getElementById('creator-row'); row.innerHTML = '';
             snap.forEach(d => {
                 const c = d.data();
-                row.innerHTML += `<div class="creator-card" onclick="handleSearch('${c.name}')"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
+                row.innerHTML += `<div class="creator-card"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
             });
         });
 
-        // --- SETTINGS ---
-        window.saveSettings = () => {
-            const name = document.getElementById('name-input').value;
-            const user = document.getElementById('username-input').value;
-            if(name) localStorage.setItem('l_name', name);
-            if(user) localStorage.setItem('l_user', user);
-            loadProfile();
-            toggleLayer('profile-layer', false);
-        };
+        onSnapshot(query(collection(db, "labaik_library"), orderBy("timestamp", "desc")), (snap) => {
+            const feed = document.getElementById('book-feed');
+            feed.innerHTML = '';
+            snap.forEach(d => {
+                const b = d.data();
+                const card = document.createElement('div');
+                card.className = "book-card";
+                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic tracking-tighter leading-tight">${b.title}</h3><p class="text-[9px] opacity-80 mt-2 line-clamp-2">${b.desc || ''}</p><div class="flex gap-3 mt-6"><button onclick="window.open('${b.pdfUrl}', '_blank')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
+                feed.appendChild(card);
+            });
+        });
 
-        window.updatePFP = (input) => {
-            const reader = new FileReader();
-            reader.onload = (e) => { localStorage.setItem('l_pfp', e.target.result); loadProfile(); };
-            reader.readAsDataURL(input.files[0]);
-        };
-
-        const loadProfile = () => {
-            const name = localStorage.getItem('l_name') || "Rai Daim";
-            const user = localStorage.getItem('l_user') || "daim_rai";
-            const pfp = localStorage.getItem('l_pfp') || "https://via.placeholder.com/100";
-            document.getElementById('display-name-label').innerText = name;
-            document.getElementById('display-username-label').innerText = "@" + user;
-            document.getElementById('name-input').value = name;
-            document.getElementById('username-input').value = user;
-            document.getElementById('profile-img').src = document.getElementById('top-pfp').src = pfp;
-        };
-
+        // --- PLAYER CORE ---
         window.setupPlayer = (s) => {
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
             document.getElementById('p-artist').innerText = s.reciter || "LABAIK ARCHIVE";
+            document.getElementById('queue-status').innerText = `Track ${currentIndex + 1} of ${musicQueue.length}`;
             audioMain.src = s.url.replace('dl=0', 'raw=1');
             audioMain.play();
             document.getElementById('p-play').className = "fas fa-pause";
@@ -246,8 +237,18 @@
             else { audioMain.pause(); document.getElementById('p-play').className = "fas fa-play ml-1"; }
         };
 
-        document.getElementById('vol-wind').oninput = (e) => { audioWind.volume = e.target.value / 100; if(audioWind.paused) audioWind.play(); };
-        document.getElementById('vol-rain').oninput = (e) => { audioRain.volume = e.target.value / 100; if(audioRain.paused) audioRain.play(); };
+        // --- AUTH & SETTINGS ---
+        window.saveSettings = () => {
+            localStorage.setItem('l_name', document.getElementById('name-input').value);
+            loadProfile();
+        };
+
+        const loadProfile = () => {
+            const name = localStorage.getItem('l_name') || "Rai Daim";
+            document.getElementById('display-name-label').innerText = name;
+            document.getElementById('name-input').value = name;
+            document.getElementById('top-pfp').src = document.getElementById('profile-img').src = localStorage.getItem('l_pfp') || "https://via.placeholder.com/100";
+        };
 
         window.handleLogout = () => { localStorage.clear(); location.reload(); };
         window.onload = loadProfile;
