@@ -13,7 +13,6 @@
         .app-frame { width: 100%; max-width: 450px; height: 100vh; background: var(--imperial); position: relative; overflow: hidden; box-shadow: 0 0 100px rgba(0,0,0,0.8); }
         @media (min-width: 1024px) { .app-frame { height: 92vh; border-radius: 45px; border: 12px solid #1a1a1a; } }
 
-        /* Queue Notification */
         #queue-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--pink); color: white; padding: 10px 20px; border-radius: 50px; font-size: 10px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
         .book-card { background: linear-gradient(135deg, #e91e63, #2196f3); border-radius: 24px; padding: 20px; position: relative; overflow: hidden; min-height: 180px; }
@@ -46,7 +45,7 @@
             <div class="px-8 flex-1 overflow-y-auto no-scrollbar pb-32">
                 <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10">
                     <i class="fas fa-search text-pink-500"></i>
-                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold" oninput="handleSearch(this.value)">
+                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold">
                 </div>
 
                 <nav class="flex gap-8 mb-8 text-[10px] font-black tracking-widest text-white/30 border-b border-white/5 pb-3">
@@ -57,14 +56,13 @@
                 <div id="main-sections">
                     <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
                     <div id="creator-row" class="flex overflow-x-auto no-scrollbar pb-4 mb-8"></div>
-                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Records</h3>
                 </div>
                 
                 <div id="song-feed" class="space-y-3"></div>
             </div>
         </div>
 
-        <!-- Option Drawer, Player Layer, Library Layer, Profile Layer (Keep as is) -->
+        <!-- OPTIONS DRAWER -->
         <div id="option-drawer" class="fixed inset-0 z-[1500] bg-black/80 flex flex-col justify-end transition-all duration-300 opacity-0 pointer-events-none">
             <div class="bg-white text-black p-8 rounded-t-[40px] space-y-4">
                 <div class="flex items-center gap-4 mb-4 pb-4 border-b">
@@ -84,17 +82,12 @@
         <div id="player-layer" class="layer p-10 flex flex-col">
             <div class="flex justify-between items-center mb-10">
                 <i class="fas fa-chevron-down opacity-20 text-xl" onclick="toggleLayer('player-layer', false)"></i>
-                <div class="flex flex-col items-center">
-                    <span class="text-[8px] font-black text-white/20 tracking-widest uppercase">Now Playing</span>
-                    <span id="queue-status" class="text-[7px] text-pink-500 font-black">--</span>
-                </div>
-                <i class="fas fa-random opacity-20" id="shuffle-btn"></i>
+                <span id="queue-status" class="text-[7px] text-pink-500 font-black uppercase">Now Playing</span>
+                <i class="fas fa-random opacity-20"></i>
             </div>
-            
             <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover border border-white/5">
             <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter mb-2">--</h1>
             <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-20">Archive Record</p>
-            
             <div class="flex items-center justify-between px-4">
                 <i class="fas fa-step-backward text-xl opacity-30" onclick="prevTrack()"></i>
                 <button onclick="toggleAudio()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-black text-3xl shadow-xl active:scale-90 transition">
@@ -105,13 +98,16 @@
         </div>
 
         <div id="library-layer" class="layer p-8 overflow-y-auto no-scrollbar">
-            <i class="fas fa-chevron-left opacity-30 mb-8" onclick="toggleLayer('library-layer', false)"></i>
+            <div class="flex justify-between items-center mb-8">
+                <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('library-layer', false)"></i>
+                <button id="stop-peace-btn" onclick="stopPeaceMusic()" class="hidden bg-pink-500 text-[8px] font-black px-3 py-1 rounded-full animate-pulse">STOP READING MUSIC</button>
+            </div>
             <h2 class="text-3xl font-black italic mb-8">LIBRARY.</h2>
             <div id="book-feed" class="space-y-6"></div>
         </div>
         
         <div id="profile-layer" class="layer p-8">
-            <i class="fas fa-arrow-left opacity-30 mb-10" onclick="toggleLayer('profile-layer', false)"></i>
+            <i class="fas fa-arrow-left opacity-30 mb-10 cursor-pointer" onclick="toggleLayer('profile-layer', false)"></i>
             <div class="flex flex-col items-center mb-10">
                 <img id="profile-img" src="https://via.placeholder.com/100" class="w-24 h-24 rounded-full border-4 border-pink-500 object-cover mb-4">
                 <h4 id="display-name-label" class="text-2xl font-black italic">--</h4>
@@ -134,27 +130,37 @@
         
         // --- PEACEFUL SOUND SYSTEM ---
         let peaceSound = new Audio("https://files.catbox.moe/8d3v74.mp3");
-        peaceSound.loop = true; // Loop enabled
+        peaceSound.loop = true;
 
         window.readAndPlay = (url) => {
-            peaceSound.play().catch(e => console.log("Audio play blocked by browser. Interaction needed."));
+            // Stop main player if something is playing
+            audioMain.pause();
+            document.getElementById('p-play').className = "fas fa-play ml-1";
+            
+            // Start reading music
+            peaceSound.play().catch(e => console.log("Blocked"));
+            document.getElementById('stop-peace-btn').classList.remove('hidden');
+            
             window.open(url, '_blank');
         };
 
-        let allSongs = [];
+        window.stopPeaceMusic = () => {
+            peaceSound.pause();
+            peaceSound.currentTime = 0;
+            document.getElementById('stop-peace-btn').classList.add('hidden');
+        };
+
         let musicQueue = [];
         let currentIndex = -1;
 
         window.toggleLayer = (id, show) => document.getElementById(id).classList.toggle('active', show);
 
-        // --- QUEUE SYSTEM ---
         window.openOptions = (s) => {
             const drawer = document.getElementById('option-drawer');
             document.getElementById('opt-art').src = s.songPic;
             document.getElementById('opt-title').innerText = s.name;
             drawer.classList.remove('pointer-events-none');
             drawer.style.opacity = '1';
-            
             document.getElementById('btn-play-now').onclick = () => { playNow(s); closeOptions(); };
             document.getElementById('btn-add-queue').onclick = () => { addToQueue(s); closeOptions(); };
         };
@@ -177,67 +183,11 @@
             setTimeout(() => toast.style.display = 'none', 2000);
         };
 
-        const nextTrack = () => {
-            if (currentIndex < musicQueue.length - 1) {
-                currentIndex++;
-                setupPlayer(musicQueue[currentIndex]);
-            }
-        };
-
-        const prevTrack = () => {
-            if (currentIndex > 0) {
-                currentIndex--;
-                setupPlayer(musicQueue[currentIndex]);
-            }
-        };
-
-        audioMain.onended = () => { if(currentIndex < musicQueue.length -1) nextTrack(); };
-
-        // --- RENDER & DATA ---
-        const renderSongs = (data) => {
-            const feed = document.getElementById('song-feed');
-            feed.innerHTML = data.length ? '' : '<p class="opacity-10 text-center py-10">Waiting...</p>';
-            data.forEach(s => {
-                const div = document.createElement('div');
-                div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5";
-                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
-                div.onclick = () => openOptions(s);
-                feed.appendChild(div);
-            });
-        };
-
-        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
-            allSongs = []; snap.forEach(d => allSongs.push(d.data()));
-            renderSongs(allSongs);
-        });
-
-        onSnapshot(collection(db, "creators"), (snap) => {
-            const row = document.getElementById('creator-row'); row.innerHTML = '';
-            snap.forEach(d => {
-                const c = d.data();
-                row.innerHTML += `<div class="creator-card"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
-            });
-        });
-
-        onSnapshot(query(collection(db, "labaik_library"), orderBy("timestamp", "desc")), (snap) => {
-            const feed = document.getElementById('book-feed');
-            feed.innerHTML = '';
-            snap.forEach(d => {
-                const b = d.data();
-                const card = document.createElement('div');
-                card.className = "book-card";
-                // Trigger readAndPlay on button click
-                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic tracking-tighter leading-tight">${b.title}</h3><p class="text-[9px] opacity-80 mt-2 line-clamp-2">${b.desc || ''}</p><div class="flex gap-3 mt-6"><button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
-                feed.appendChild(card);
-            });
-        });
-
-        // --- PLAYER CORE ---
         window.setupPlayer = (s) => {
+            stopPeaceMusic(); // Reading music band krdo agar gaana chalaya
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
             document.getElementById('p-artist').innerText = s.reciter || "LABAIK ARCHIVE";
-            document.getElementById('queue-status').innerText = `Track ${currentIndex + 1} of ${musicQueue.length}`;
             audioMain.src = s.url.replace('dl=0', 'raw=1');
             audioMain.play();
             document.getElementById('p-play').className = "fas fa-pause";
@@ -249,7 +199,40 @@
             else { audioMain.pause(); document.getElementById('p-play').className = "fas fa-play ml-1"; }
         };
 
-        // --- AUTH & SETTINGS ---
+        // --- DATA SYNC ---
+        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+            const feed = document.getElementById('song-feed');
+            feed.innerHTML = '';
+            snap.forEach(d => {
+                const s = d.data();
+                const div = document.createElement('div');
+                div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5";
+                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
+                div.onclick = () => openOptions(s);
+                feed.appendChild(div);
+            });
+        });
+
+        onSnapshot(query(collection(db, "labaik_library"), orderBy("timestamp", "desc")), (snap) => {
+            const feed = document.getElementById('book-feed');
+            feed.innerHTML = '';
+            snap.forEach(d => {
+                const b = d.data();
+                const card = document.createElement('div');
+                card.className = "book-card";
+                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic leading-tight">${b.title}</h3><div class="flex gap-3 mt-6"><button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
+                feed.appendChild(card);
+            });
+        });
+
+        onSnapshot(collection(db, "creators"), (snap) => {
+            const row = document.getElementById('creator-row'); row.innerHTML = '';
+            snap.forEach(d => {
+                const c = d.data();
+                row.innerHTML += `<div class="creator-card"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
+            });
+        });
+
         window.saveSettings = () => {
             localStorage.setItem('l_name', document.getElementById('name-input').value);
             loadProfile();
