@@ -64,6 +64,7 @@
             </div>
         </div>
 
+        <!-- Option Drawer, Player Layer, Library Layer, Profile Layer (Keep as is) -->
         <div id="option-drawer" class="fixed inset-0 z-[1500] bg-black/80 flex flex-col justify-end transition-all duration-300 opacity-0 pointer-events-none">
             <div class="bg-white text-black p-8 rounded-t-[40px] space-y-4">
                 <div class="flex items-center gap-4 mb-4 pb-4 border-b">
@@ -130,6 +131,16 @@
         const db = getFirestore(app);
 
         let audioMain = new Audio();
+        
+        // --- PEACEFUL SOUND SYSTEM ---
+        let peaceSound = new Audio("https://files.catbox.moe/8d3v74.mp3");
+        peaceSound.loop = true; // Loop enabled
+
+        window.readAndPlay = (url) => {
+            peaceSound.play().catch(e => console.log("Audio play blocked by browser. Interaction needed."));
+            window.open(url, '_blank');
+        };
+
         let allSongs = [];
         let musicQueue = [];
         let currentIndex = -1;
@@ -215,7 +226,8 @@
                 const b = d.data();
                 const card = document.createElement('div');
                 card.className = "book-card";
-                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic tracking-tighter leading-tight">${b.title}</h3><p class="text-[9px] opacity-80 mt-2 line-clamp-2">${b.desc || ''}</p><div class="flex gap-3 mt-6"><button onclick="window.open('${b.pdfUrl}', '_blank')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
+                // Trigger readAndPlay on button click
+                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic tracking-tighter leading-tight">${b.title}</h3><p class="text-[9px] opacity-80 mt-2 line-clamp-2">${b.desc || ''}</p><div class="flex gap-3 mt-6"><button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
                 feed.appendChild(card);
             });
         });
