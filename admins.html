@@ -11,34 +11,46 @@
         .btn-green { background: #1DB954; color: #050A09; font-weight: 800; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; transition: 0.3s; }
         .btn-green:hover { background: #1ed760; transform: scale(1.02); }
         .label-style { font-weight: bold; font-size: 10px; color: #1DB954; text-transform: uppercase; letter-spacing: 1px; }
-        
-        /* Book Card Preview in Admin */
-        .book-preview { background: linear-gradient(135deg, #e91e63, #2196f3); border-radius: 15px; padding: 15px; position: relative; overflow: hidden; width: 160px; height: 220px; }
-        .book-preview img { position: absolute; bottom: -10px; right: -10px; width: 100px; transform: rotate(-15deg); border-radius: 8px; box-shadow: -5px 5px 15px rgba(0,0,0,0.3); }
+        .book-label { color: #f472b6; } /* Pink color for book sections */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="max-w-5xl mx-auto">
+<body class="max-w-6xl mx-auto">
 
     <header class="mb-10 border-b border-white/5 pb-6 flex justify-between items-end">
         <div>
             <h1 class="text-3xl font-black text-[#1DB954]">LABAIK STUDIO</h1>
-            <p class="text-xs text-gray-500 uppercase tracking-widest">Live Content & Library Manager</p>
+            <p class="text-xs text-gray-500 uppercase tracking-widest">Master Control Panel</p>
         </div>
     </header>
 
     <div class="grid md:grid-cols-3 gap-6">
-        <!-- Category & Reciter -->
+        
+        <!-- COLUMN 1: CATEGORIES & RECITERS -->
         <div class="space-y-6">
+            <!-- Noha Categories -->
             <div class="card">
-                <p class="label-style mb-4">1. Category</p>
+                <p class="label-style mb-4">1. Noha Categories</p>
                 <div class="flex gap-2">
-                    <input type="text" id="cat-name" placeholder="Name">
-                    <button onclick="addCategory()" class="bg-white text-black px-4 rounded-xl font-bold">Add</button>
+                    <input type="text" id="cat-name" placeholder="E.g. Matami">
+                    <button onclick="addCategory('categories', 'cat-name')" class="bg-white text-black px-4 rounded-xl font-bold">Add</button>
                 </div>
-                <div id="cat-display" class="mt-4 space-y-2 max-height-40 overflow-y-auto"></div>
+                <div id="cat-display" class="mt-4 space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
             </div>
+
+            <!-- Library Categories -->
             <div class="card">
-                <p class="label-style mb-4">2. Reciter</p>
+                <p class="label-style mb-4 book-label">2. Library Categories</p>
+                <div class="flex gap-2">
+                    <input type="text" id="lib-cat-name" placeholder="E.g. History">
+                    <button onclick="addCategory('book_categories', 'lib-cat-name')" class="bg-pink-500 text-white px-4 rounded-xl font-bold">Add</button>
+                </div>
+                <div id="lib-cat-display" class="mt-4 space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
+            </div>
+
+            <!-- Reciters -->
+            <div class="card">
+                <p class="label-style mb-4">3. Reciter / Creator</p>
                 <input type="text" id="cre-name" placeholder="Name">
                 <input type="text" id="cre-pic" placeholder="Image URL">
                 <button onclick="addCreator()" class="btn-green mt-2">Register Reciter</button>
@@ -46,41 +58,43 @@
             </div>
         </div>
 
-        <!-- Publish Noha -->
+        <!-- COLUMN 2: PUBLISH NOHA -->
         <div class="card">
-            <p class="label-style mb-4">3. Publish Noha</p>
-            <select id="n-cat"><option>Assign Category</option></select>
+            <p class="label-style mb-4">4. Publish Noha</p>
+            <select id="n-cat"><option>Assign Noha Category</option></select>
             <select id="n-cre"><option>Assign Reciter</option></select>
             <input type="text" id="n-name" placeholder="Noha Title">
             <input type="text" id="n-pic" placeholder="Cover URL">
             <input type="text" id="n-url" placeholder="Audio URL">
             <div class="grid grid-cols-2 gap-2">
-                <input type="text" id="n-nature" placeholder="Nature Mix">
-                <input type="text" id="n-rain" placeholder="Rain Mix">
+                <input type="text" id="n-nature" placeholder="Nature Mix URL">
+                <input type="text" id="n-rain" placeholder="Rain Mix URL">
             </div>
-            <button onclick="publishNoha()" class="btn-green mt-4 italic">PUBLISH NOHA</button>
+            <button onclick="publishNoha()" class="btn-green mt-4 italic">PUBLISH RECORD</button>
+            
+            <div class="mt-8 pt-4 border-t border-white/5">
+                <p class="text-[9px] uppercase opacity-40 mb-3 tracking-widest">Recent Nohas</p>
+                <div id="noha-list" class="space-y-2"></div>
+            </div>
         </div>
 
-        <!-- NEW: Publish Book -->
+        <!-- COLUMN 3: PUBLISH BOOK -->
         <div class="card border-l-4 border-pink-500">
-            <p class="label-style mb-4 text-pink-500">4. Digital Library</p>
+            <p class="label-style mb-4 book-label">5. Digital Library</p>
+            <select id="b-cat"><option>Select Book Category</option></select>
             <input type="text" id="b-title" placeholder="Book Title">
-            <textarea id="b-desc" placeholder="Short Description..." rows="2"></textarea>
-            <input type="text" id="b-pic" placeholder="Book Cover Image URL">
-            <input type="text" id="b-pdf" placeholder="PDF URL (Drive/Dropbox)">
-            <button onclick="publishBook()" class="w-full bg-gradient-to-r from-pink-500 to-blue-500 text-white font-black py-3 rounded-xl mt-4">PUBLISH BOOK</button>
+            <input type="text" id="b-author" placeholder="Author Name">
+            <textarea id="b-desc" placeholder="Brief Summary..." rows="2"></textarea>
+            <input type="text" id="b-pic" placeholder="Cover Image URL">
+            <input type="text" id="b-pdf" placeholder="PDF Direct URL">
             
-            <div class="mt-6 border-t border-white/5 pt-4">
-                <p class="text-[9px] uppercase opacity-40 mb-3 tracking-widest">Live Books</p>
+            <button onclick="publishBook()" class="w-full bg-gradient-to-r from-pink-500 to-blue-500 text-white font-black py-3 rounded-xl mt-4 active:scale-95 transition">PUBLISH BOOK</button>
+            
+            <div class="mt-8 pt-4 border-t border-white/5">
+                <p class="text-[9px] uppercase opacity-40 mb-3 tracking-widest text-pink-400">Library Archive</p>
                 <div id="book-list" class="space-y-3"></div>
             </div>
         </div>
-    </div>
-
-    <!-- Live Media Status -->
-    <div class="card mt-6">
-        <p class="label-style mb-4 text-gray-500">Live Noha Records</p>
-        <div id="noha-list" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-bold"></div>
     </div>
 
     <script type="module">
@@ -97,29 +111,44 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- Category Logic ---
-        window.addCategory = async () => {
-            const name = document.getElementById('cat-name').value;
-            if(name) await addDoc(collection(db, "categories"), { name });
-            document.getElementById('cat-name').value = '';
+        // --- Shared Delete Function ---
+        window.remove = async (coll, id) => { if(confirm("Confirm Delete?")) await deleteDoc(doc(db, coll, id)); };
+
+        // --- Category Logic (Universal for Noha & Books) ---
+        window.addCategory = async (collName, inputId) => {
+            const val = document.getElementById(inputId).value;
+            if(val) await addDoc(collection(db, collName), { name: val });
+            document.getElementById(inputId).value = '';
         };
 
+        // Listen for Noha Categories
         onSnapshot(collection(db, "categories"), (snap) => {
             const disp = document.getElementById('cat-display');
             const select = document.getElementById('n-cat');
-            disp.innerHTML = ''; select.innerHTML = '<option>Assign Category</option>';
+            disp.innerHTML = ''; select.innerHTML = '<option>Assign Noha Category</option>';
             snap.forEach(d => {
-                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg"><span>${d.data().name}</span><i class="fas fa-trash text-red-500 cursor-pointer" onclick="remove('categories','${d.id}')"></i></div>`;
-                select.innerHTML += `<option value="${d.id}">${d.data().name}</option>`;
+                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-times text-red-500 cursor-pointer" onclick="remove('categories','${d.id}')"></i></div>`;
+                select.innerHTML += `<option value="${d.data().name}">${d.data().name}</option>`;
             });
         });
 
-        // --- Creator Logic ---
+        // Listen for Book Categories
+        onSnapshot(collection(db, "book_categories"), (snap) => {
+            const disp = document.getElementById('lib-cat-display');
+            const select = document.getElementById('b-cat');
+            disp.innerHTML = ''; select.innerHTML = '<option>Select Book Category</option>';
+            snap.forEach(d => {
+                disp.innerHTML += `<div class="flex justify-between bg-pink-500/10 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-times text-red-400 cursor-pointer" onclick="remove('book_categories','${d.id}')"></i></div>`;
+                select.innerHTML += `<option value="${d.data().name}">${d.data().name}</option>`;
+            });
+        });
+
+        // --- Reciter Logic ---
         window.addCreator = async () => {
             const name = document.getElementById('cre-name').value;
             const pic = document.getElementById('cre-pic').value;
             if(name) await addDoc(collection(db, "creators"), { name, pic });
-            document.getElementById('cre-name').value = '';
+            document.getElementById('cre-name').value = ''; document.getElementById('cre-pic').value = '';
         };
 
         onSnapshot(collection(db, "creators"), (snap) => {
@@ -127,8 +156,8 @@
             const select = document.getElementById('n-cre');
             disp.innerHTML = ''; select.innerHTML = '<option>Assign Reciter</option>';
             snap.forEach(d => {
-                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg"><span>${d.data().name}</span><i class="fas fa-trash text-red-500 cursor-pointer" onclick="remove('creators','${d.id}')"></i></div>`;
-                select.innerHTML += `<option value="${d.id}">${d.data().name}</option>`;
+                disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-times text-red-500 cursor-pointer" onclick="remove('creators','${d.id}')"></i></div>`;
+                select.innerHTML += `<option value="${d.data().name}">${d.data().name}</option>`;
             });
         });
 
@@ -138,34 +167,36 @@
                 name: document.getElementById('n-name').value,
                 songPic: document.getElementById('n-pic').value,
                 url: document.getElementById('n-url').value,
-                catId: document.getElementById('n-cat').value,
-                creId: document.getElementById('n-cre').value,
+                category: document.getElementById('n-cat').value,
+                reciter: document.getElementById('n-cre').value,
                 natureUrl: document.getElementById('n-nature').value || "",
                 rainUrl: document.getElementById('n-rain').value || "",
                 timestamp: Date.now()
             };
             if(data.name && data.url) {
                 await addDoc(collection(db, "labaik_songs"), data);
-                alert("Noha Live!");
-                document.querySelectorAll('.card input').forEach(i => i.value = '');
+                alert("Noha Published!");
+                document.querySelectorAll('#n-name, #n-pic, #n-url, #n-nature, #n-rain').forEach(i => i.value = '');
             }
         };
 
         onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
             const disp = document.getElementById('noha-list'); disp.innerHTML = '';
             snap.forEach(d => {
-                disp.innerHTML += `<div class="flex items-center gap-2 bg-white/5 p-2 rounded-lg">
-                    <img src="${d.data().songPic}" class="w-8 h-8 rounded object-cover">
+                disp.innerHTML += `<div class="flex items-center gap-2 bg-white/5 p-2 rounded-lg text-[10px]">
+                    <img src="${d.data().songPic}" class="w-6 h-6 rounded object-cover">
                     <span class="truncate flex-1">${d.data().name}</span>
                     <i class="fas fa-trash text-red-800 cursor-pointer" onclick="remove('labaik_songs','${d.id}')"></i>
                 </div>`;
             });
         });
 
-        // --- NEW: Book Publishing ---
+        // --- Book Publishing ---
         window.publishBook = async () => {
             const data = {
                 title: document.getElementById('b-title').value,
+                author: document.getElementById('b-author').value,
+                category: document.getElementById('b-cat').value,
                 desc: document.getElementById('b-desc').value,
                 cover: document.getElementById('b-pic').value,
                 pdfUrl: document.getElementById('b-pdf').value,
@@ -173,11 +204,8 @@
             };
             if(data.title && data.pdfUrl) {
                 await addDoc(collection(db, "labaik_library"), data);
-                alert("Book Added to Library!");
-                document.getElementById('b-title').value = '';
-                document.getElementById('b-desc').value = '';
-                document.getElementById('b-pic').value = '';
-                document.getElementById('b-pdf').value = '';
+                alert("Book Added!");
+                document.querySelectorAll('.border-pink-500 input, .border-pink-500 textarea').forEach(i => i.value = '');
             }
         };
 
@@ -185,17 +213,16 @@
             const disp = document.getElementById('book-list'); disp.innerHTML = '';
             snap.forEach(d => {
                 disp.innerHTML += `<div class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <div class="w-10 h-12 bg-gradient-to-br from-pink-500 to-blue-500 rounded flex items-center justify-center text-[10px] font-black">PDF</div>
+                    <img src="${d.data().cover}" class="w-8 h-10 object-cover rounded shadow-lg">
                     <div class="flex-1">
                         <p class="text-xs font-bold">${d.data().title}</p>
-                        <p class="text-[8px] opacity-30 uppercase tracking-tighter">Live in Library</p>
+                        <p class="text-[8px] opacity-40 uppercase tracking-tighter">${d.data().category}</p>
                     </div>
                     <i class="fas fa-trash-alt text-red-500 cursor-pointer text-xs" onclick="remove('labaik_library','${d.id}')"></i>
                 </div>`;
             });
         });
-
-        window.remove = async (coll, id) => { if(confirm("Permanently Delete?")) await deleteDoc(doc(db, coll, id)); };
     </script>
 </body>
-</html>
+    </html>
+    
