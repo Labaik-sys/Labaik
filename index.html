@@ -15,8 +15,10 @@
 
         #queue-toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--pink); color: white; padding: 10px 20px; border-radius: 50px; font-size: 10px; font-weight: 900; z-index: 2000; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        .book-card { background: linear-gradient(135deg, #e91e63, #2196f3); border-radius: 24px; padding: 20px; position: relative; overflow: hidden; min-height: 180px; }
-        .book-card img { position: absolute; right: -15px; bottom: -15px; width: 110px; height: 150px; object-fit: cover; transform: rotate(-10deg); border-radius: 12px; }
+        .book-card { background: linear-gradient(135deg, #e91e63, #2196f3); border-radius: 24px; padding: 20px; position: relative; overflow: hidden; min-height: 180px; transition: 0.3s; }
+        .book-card:active { scale: 0.98; }
+        .book-card img { position: absolute; right: -15px; bottom: -15px; width: 110px; height: 150px; object-fit: cover; transform: rotate(-10deg); border-radius: 12px; transition: 0.5s; }
+        .book-card:hover img { transform: rotate(0deg) scale(1.1); }
 
         .creator-card { background: var(--pink); border-radius: 24px; min-width: 240px; height: 140px; position: relative; overflow: hidden; margin-right: 20px; flex-shrink: 0; padding: 22px; }
         .creator-card img { position: absolute; right: 0; bottom: 0; width: 115px; height: 100%; object-fit: cover; mask-image: linear-gradient(to left, black 60%, transparent); }
@@ -26,6 +28,9 @@
         
         .glass-card { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; transition: 0.3s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .category-chip { flex-shrink: 0; padding: 8px 16px; border-radius: 50px; font-size: 8px; font-weight: 900; letter-spacing: 0.1em; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); cursor: pointer; transition: 0.3s; }
+        .category-chip.active { background: white; color: black; border-color: white; }
     </style>
 </head>
 <body>
@@ -45,7 +50,7 @@
             <div class="px-8 flex-1 overflow-y-auto no-scrollbar pb-32">
                 <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10">
                     <i class="fas fa-search text-pink-500"></i>
-                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold">
+                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold" oninput="handleSearch(this.value)">
                 </div>
 
                 <nav class="flex gap-8 mb-8 text-[10px] font-black tracking-widest text-white/30 border-b border-white/5 pb-3">
@@ -56,6 +61,7 @@
                 <div id="main-sections">
                     <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
                     <div id="creator-row" class="flex overflow-x-auto no-scrollbar pb-4 mb-8"></div>
+                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Records</h3>
                 </div>
                 
                 <div id="song-feed" class="space-y-3"></div>
@@ -82,12 +88,25 @@
         <div id="player-layer" class="layer p-10 flex flex-col">
             <div class="flex justify-between items-center mb-10">
                 <i class="fas fa-chevron-down opacity-20 text-xl" onclick="toggleLayer('player-layer', false)"></i>
-                <span id="queue-status" class="text-[7px] text-pink-500 font-black uppercase">Now Playing</span>
+                <div class="flex flex-col items-center">
+                    <span class="text-[8px] font-black text-white/20 tracking-widest uppercase">Now Playing</span>
+                    <span id="queue-status" class="text-[7px] text-pink-500 font-black">--</span>
+                </div>
                 <i class="fas fa-random opacity-20"></i>
             </div>
+            
             <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover border border-white/5">
             <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter mb-2">--</h1>
-            <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-20">Archive Record</p>
+            <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-10">Archive Record</p>
+            
+            <div class="w-full bg-white/10 h-1 rounded-full mb-2">
+                <div id="p-progress" class="bg-pink-500 h-full w-0 rounded-full transition-all duration-300"></div>
+            </div>
+            <div class="flex justify-between text-[8px] font-bold opacity-30 mb-10 uppercase tracking-widest">
+                <span id="p-current">0:00</span>
+                <span id="p-total">0:00</span>
+            </div>
+
             <div class="flex items-center justify-between px-4">
                 <i class="fas fa-step-backward text-xl opacity-30" onclick="prevTrack()"></i>
                 <button onclick="toggleAudio()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-black text-3xl shadow-xl active:scale-90 transition">
@@ -98,11 +117,20 @@
         </div>
 
         <div id="library-layer" class="layer p-8 overflow-y-auto no-scrollbar">
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex justify-between items-center mb-6">
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('library-layer', false)"></i>
                 <button id="stop-peace-btn" onclick="stopPeaceMusic()" class="hidden bg-pink-500 text-[8px] font-black px-3 py-1 rounded-full animate-pulse">STOP READING MUSIC</button>
             </div>
-            <h2 class="text-3xl font-black italic mb-8">LIBRARY.</h2>
+            <h2 class="text-3xl font-black italic mb-6">LIBRARY.</h2>
+            
+            <!-- Category Chips -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar mb-8">
+                <div class="category-chip active" onclick="filterLibrary('All', this)">ALL</div>
+                <div class="category-chip" onclick="filterLibrary('History', this)">HISTORY</div>
+                <div class="category-chip" onclick="filterLibrary('Poetry', this)">POETRY</div>
+                <div class="category-chip" onclick="filterLibrary('Research', this)">RESEARCH</div>
+            </div>
+
             <div id="book-feed" class="space-y-6"></div>
         </div>
         
@@ -127,20 +155,49 @@
         const db = getFirestore(app);
 
         let audioMain = new Audio();
-        
-        // --- PEACEFUL SOUND SYSTEM ---
         let peaceSound = new Audio("https://files.catbox.moe/8d3v74.mp3");
         peaceSound.loop = true;
 
+        let allSongs = [];
+        let allBooks = [];
+        let musicQueue = [];
+        let currentIndex = -1;
+
+        window.handleSearch = (val) => {
+            const query = val.toLowerCase();
+            const filtered = allSongs.filter(s => 
+                s.name.toLowerCase().includes(query) || 
+                (s.reciter && s.reciter.toLowerCase().includes(query))
+            );
+            renderSongs(filtered);
+        };
+
+        window.filterLibrary = (cat, el) => {
+            document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            const filtered = cat === 'All' ? allBooks : allBooks.filter(b => b.category === cat);
+            renderBooks(filtered);
+        };
+
+        audioMain.ontimeupdate = () => {
+            if (audioMain.duration) {
+                const prog = (audioMain.currentTime / audioMain.duration) * 100;
+                document.getElementById('p-progress').style.width = prog + '%';
+                const formatTime = (t) => {
+                    const m = Math.floor(t / 60);
+                    const s = Math.floor(t % 60);
+                    return `${m}:${s < 10 ? '0' + s : s}`;
+                };
+                document.getElementById('p-current').innerText = formatTime(audioMain.currentTime);
+                document.getElementById('p-total').innerText = formatTime(audioMain.duration);
+            }
+        };
+
         window.readAndPlay = (url) => {
-            // Stop main player if something is playing
             audioMain.pause();
             document.getElementById('p-play').className = "fas fa-play ml-1";
-            
-            // Start reading music
             peaceSound.play().catch(e => console.log("Blocked"));
             document.getElementById('stop-peace-btn').classList.remove('hidden');
-            
             window.open(url, '_blank');
         };
 
@@ -149,9 +206,6 @@
             peaceSound.currentTime = 0;
             document.getElementById('stop-peace-btn').classList.add('hidden');
         };
-
-        let musicQueue = [];
-        let currentIndex = -1;
 
         window.toggleLayer = (id, show) => document.getElementById(id).classList.toggle('active', show);
 
@@ -184,10 +238,11 @@
         };
 
         window.setupPlayer = (s) => {
-            stopPeaceMusic(); // Reading music band krdo agar gaana chalaya
+            stopPeaceMusic();
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
             document.getElementById('p-artist').innerText = s.reciter || "LABAIK ARCHIVE";
+            document.getElementById('queue-status').innerText = `Track ${currentIndex + 1} of ${musicQueue.length}`;
             audioMain.src = s.url.replace('dl=0', 'raw=1');
             audioMain.play();
             document.getElementById('p-play').className = "fas fa-pause";
@@ -199,30 +254,52 @@
             else { audioMain.pause(); document.getElementById('p-play').className = "fas fa-play ml-1"; }
         };
 
-        // --- DATA SYNC ---
-        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+        window.nextTrack = () => { if (currentIndex < musicQueue.length - 1) { currentIndex++; setupPlayer(musicQueue[currentIndex]); } };
+        window.prevTrack = () => { if (currentIndex > 0) { currentIndex--; setupPlayer(musicQueue[currentIndex]); } };
+        audioMain.onended = () => { if(currentIndex < musicQueue.length -1) nextTrack(); };
+
+        const renderSongs = (data) => {
             const feed = document.getElementById('song-feed');
             feed.innerHTML = '';
-            snap.forEach(d => {
-                const s = d.data();
+            data.forEach(s => {
                 const div = document.createElement('div');
                 div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5";
                 div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
                 div.onclick = () => openOptions(s);
                 feed.appendChild(div);
             });
+        };
+
+        const renderBooks = (data) => {
+            const feed = document.getElementById('book-feed');
+            feed.innerHTML = '';
+            data.forEach(b => {
+                const card = document.createElement('div');
+                card.className = "book-card";
+                card.innerHTML = `
+                    <div class="w-2/3">
+                        <h3 class="text-xl font-black italic leading-tight">${b.title}</h3>
+                        <p class="text-[8px] opacity-60 mt-1 uppercase font-bold tracking-widest">${b.author || 'Rai Daim'}</p>
+                        <div class="flex gap-3 mt-6">
+                            <button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-6 py-2 rounded-full uppercase">Read</button>
+                            <a href="${b.pdfUrl}" download class="bg-black/20 text-white w-9 h-9 rounded-full flex items-center justify-center border border-white/10 active:scale-90 transition">
+                                <i class="fas fa-download text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <img src="${b.cover}">`;
+                feed.appendChild(card);
+            });
+        };
+
+        onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
+            allSongs = []; snap.forEach(d => allSongs.push(d.data()));
+            renderSongs(allSongs);
         });
 
         onSnapshot(query(collection(db, "labaik_library"), orderBy("timestamp", "desc")), (snap) => {
-            const feed = document.getElementById('book-feed');
-            feed.innerHTML = '';
-            snap.forEach(d => {
-                const b = d.data();
-                const card = document.createElement('div');
-                card.className = "book-card";
-                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic leading-tight">${b.title}</h3><div class="flex gap-3 mt-6"><button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-4 py-2 rounded-full uppercase">Read</button></div></div><img src="${b.cover}">`;
-                feed.appendChild(card);
-            });
+            allBooks = []; snap.forEach(d => allBooks.push(d.data()));
+            renderBooks(allBooks);
         });
 
         onSnapshot(collection(db, "creators"), (snap) => {
@@ -233,11 +310,7 @@
             });
         });
 
-        window.saveSettings = () => {
-            localStorage.setItem('l_name', document.getElementById('name-input').value);
-            loadProfile();
-        };
-
+        window.saveSettings = () => { localStorage.setItem('l_name', document.getElementById('name-input').value); loadProfile(); };
         const loadProfile = () => {
             const name = localStorage.getItem('l_name') || "Rai Daim";
             document.getElementById('display-name-label').innerText = name;
@@ -249,4 +322,5 @@
         window.onload = loadProfile;
     </script>
 </body>
-</html>
+    </html>
+    
