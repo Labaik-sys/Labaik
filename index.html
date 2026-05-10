@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -98,7 +99,7 @@
         <div id="savings-layer" class="layer jar-bg p-8 overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-8">
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('savings-layer', false)"></i>
-                <h3 class="text-[10px] font-black tracking-widest text-pink-500 uppercase">Intentions & Savings</h3>
+                <h3 class="text-[10px] font-black tracking-widest text-pink-500 uppercase">Local Intentions</h3>
                 <button onclick="document.getElementById('goal-modal').classList.remove('hidden')" class="bg-pink-500 w-8 h-8 rounded-full text-white">+</button>
             </div>
             <div id="active-savings-list" class="space-y-6"></div>
@@ -125,11 +126,12 @@
                     <option value="Trip">Trip (Karbala/Umrah)</option>
                     <option value="Donation">Donation</option>
                 </select>
-                <button onclick="saveSavingsGoal()" class="w-full py-4 bg-pink-500 rounded-2xl font-black text-[10px] tracking-widest uppercase mt-4">Save Intention</button>
+                <button onclick="saveSavingsGoal()" class="w-full py-4 bg-pink-500 rounded-2xl font-black text-[10px] tracking-widest uppercase mt-4">Save Locally</button>
                 <button onclick="document.getElementById('goal-modal').classList.add('hidden')" class="w-full text-[10px] opacity-30 font-bold uppercase mt-2">Close</button>
             </div>
         </div>
 
+        <!-- SLEEP LAYER -->
         <div id="sleep-layer" class="layer p-8 flex flex-col">
             <div class="flex justify-between items-center mb-6">
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('sleep-layer', false)"></i>
@@ -233,12 +235,60 @@
         let selectedForSleep = [];
         let sleepTimerRef = null;
 
-        // --- NEW VIEWER LOGIC ---
-        window.openViewer = (url, title) => {
-            stopPeaceMusic(); // Purana music band
-            peaceSound.play().catch(e => console.log("Peace sound blocked")); // Reading music start
-            document.getElementById('stop-peace-btn').classList.remove('hidden');
+        // --- NEW LOCAL SAVINGS LOGIC (Private) ---
+        let localSavings = JSON.parse(localStorage.getItem('labaik_local_savings')) || [];
+
+        window.saveSavingsGoal = () => {
+            const name = document.getElementById('s-name').value;
+            const target = Number(document.getElementById('s-target').value);
+            const curr = document.getElementById('s-curr').value;
+            const cat = document.getElementById('s-cat').value;
+            if(!name || !target) return alert("Fill data");
             
+            const newGoal = { id: Date.now(), name, target, curr, cat, current: 0 };
+            localSavings.push(newGoal);
+            syncSavings();
+            document.getElementById('goal-modal').classList.add('hidden');
+        };
+
+        window.addCash = (id) => {
+            const val = prompt("Enter Amount:");
+            if(val) {
+                localSavings = localSavings.map(g => g.id === id ? {...g, current: g.current + Number(val)} : g);
+                syncSavings();
+            }
+        };
+
+        window.delGoal = (id) => { 
+            if(confirm("Delete this?")) {
+                localSavings = localSavings.filter(g => g.id !== id);
+                syncSavings();
+            }
+        };
+
+        const syncSavings = () => {
+            localStorage.setItem('labaik_local_savings', JSON.stringify(localSavings));
+            renderSavings();
+        };
+
+        const renderSavings = () => {
+            const list = document.getElementById('active-savings-list');
+            const hist = document.getElementById('savings-history');
+            list.innerHTML = hist.innerHTML = '';
+            
+            localSavings.forEach(g => {
+                const perc = Math.min((g.current / g.target) * 100, 100);
+                const isDone = g.current >= g.target;
+                const card = `<div class="glass-card p-5 flex items-center gap-6 border-white/5 relative"><div class="savings-jar"><div class="liquid" style="height: ${perc}%"></div><div class="absolute inset-0 flex items-center justify-center text-[8px] font-black">${perc.toFixed(0)}%</div></div><div class="flex-1"><h4 class="text-xs font-black uppercase tracking-tighter">${g.name}</h4><p class="text-[7px] text-pink-500 font-bold uppercase mb-2">${g.cat}</p><p class="text-sm font-black">${g.curr} ${g.current.toLocaleString()} <span class="opacity-20 text-[10px]">/ ${g.target.toLocaleString()}</span></p></div><div class="flex flex-col gap-2"><i onclick="addCash(${g.id})" class="fas fa-plus-circle text-pink-500 text-lg cursor-pointer"></i><i onclick="delGoal(${g.id})" class="fas fa-trash opacity-20 text-xs cursor-pointer"></i></div></div>`;
+                if(isDone) hist.innerHTML += card; else list.innerHTML += card;
+            });
+        };
+
+        // --- PDF VIEWER LOGIC ---
+        window.openViewer = (url, title) => {
+            stopPeaceMusic();
+            peaceSound.play().catch(e => console.log("Peace sound blocked"));
+            document.getElementById('stop-peace-btn').classList.remove('hidden');
             const gViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
             document.getElementById('pdf-iframe').src = gViewerUrl;
             document.getElementById('viewer-title').innerText = title;
@@ -255,37 +305,6 @@
             document.getElementById('pdf-iframe').src = "";
             setTimeout(() => { document.getElementById('pdf-iframe').src = currentSrc; }, 100);
         };
-
-        // --- SAVINGS LOGIC ---
-        window.saveSavingsGoal = async () => {
-            const name = document.getElementById('s-name').value;
-            const target = Number(document.getElementById('s-target').value);
-            const curr = document.getElementById('s-curr').value;
-            const cat = document.getElementById('s-cat').value;
-            if(!name || !target) return alert("Fill data");
-            await addDoc(collection(db, "labaik_savings"), { name, target, curr, cat, current: 0, timestamp: serverTimestamp() });
-            document.getElementById('goal-modal').classList.add('hidden');
-        };
-
-        window.addCash = async (id) => {
-            const val = prompt("Enter Amount:");
-            if(val) await updateDoc(doc(db, "labaik_savings", id), { current: increment(Number(val)) });
-        };
-
-        window.delGoal = async (id) => { if(confirm("Delete this?")) await deleteDoc(doc(db, "labaik_savings", id)); };
-
-        onSnapshot(query(collection(db, "labaik_savings"), orderBy("timestamp", "desc")), (snap) => {
-            const list = document.getElementById('active-savings-list');
-            const hist = document.getElementById('savings-history');
-            list.innerHTML = hist.innerHTML = '';
-            snap.forEach(d => {
-                const g = d.data();
-                const perc = Math.min((g.current / g.target) * 100, 100);
-                const isDone = g.current >= g.target;
-                const card = `<div class="glass-card p-5 flex items-center gap-6 border-white/5 relative"><div class="savings-jar"><div class="liquid" style="height: ${perc}%"></div><div class="absolute inset-0 flex items-center justify-center text-[8px] font-black">${perc.toFixed(0)}%</div></div><div class="flex-1"><h4 class="text-xs font-black uppercase tracking-tighter">${g.name}</h4><p class="text-[7px] text-pink-500 font-bold uppercase mb-2">${g.cat}</p><p class="text-sm font-black">${g.curr} ${g.current.toLocaleString()} <span class="opacity-20 text-[10px]">/ ${g.target.toLocaleString()}</span></p></div><div class="flex flex-col gap-2"><i onclick="addCash('${d.id}')" class="fas fa-plus-circle text-pink-500 text-lg cursor-pointer"></i><i onclick="delGoal('${d.id}')" class="fas fa-trash opacity-20 text-xs cursor-pointer"></i></div></div>`;
-                if(isDone) hist.innerHTML += card; else list.innerHTML += card;
-            });
-        });
 
         // --- AUDIO LOGIC ---
         window.seekAudio = (e) => {
@@ -493,7 +512,11 @@
         };
 
         window.handleLogout = () => { localStorage.clear(); location.reload(); };
-        window.onload = loadProfile;
+        
+        window.onload = () => {
+            loadProfile();
+            renderSavings(); // Load private savings on start
+        };
     </script>
 </body>
 </html>
