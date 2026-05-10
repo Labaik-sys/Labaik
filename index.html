@@ -49,6 +49,18 @@
     <div class="app-frame" id="main-container">
         <div id="queue-toast">ADDED TO QUEUE</div>
 
+        <!-- PDF VIEWER LAYER -->
+        <div id="viewer-layer" class="layer z-[2500] flex flex-col bg-black">
+            <div class="p-4 flex justify-between items-center bg-[#1a1a1a]">
+                <i class="fas fa-times text-xl cursor-pointer" onclick="closeViewer()"></i>
+                <span id="viewer-title" class="text-[10px] font-black tracking-widest uppercase truncate px-4">Reading...</span>
+                <i class="fas fa-redo-alt opacity-20 text-xs" onclick="refreshViewer()"></i>
+            </div>
+            <div class="flex-1 w-full bg-white">
+                <iframe id="pdf-iframe" src="" class="w-full h-full border-none"></iframe>
+            </div>
+        </div>
+
         <div id="app-content" class="h-full flex flex-col">
             <header class="p-8 pb-4 flex justify-between items-center">
                 <h2 class="text-3xl font-black italic tracking-tighter cursor-pointer" onclick="window.location.reload()">LABAIK.</h2>
@@ -82,7 +94,7 @@
             </div>
         </div>
 
-        <!-- Layers Remain Unchanged Structure-wise as per Note -->
+        <!-- Layers -->
         <div id="savings-layer" class="layer jar-bg p-8 overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-8">
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('savings-layer', false)"></i>
@@ -221,6 +233,29 @@
         let selectedForSleep = [];
         let sleepTimerRef = null;
 
+        // --- NEW VIEWER LOGIC ---
+        window.openViewer = (url, title) => {
+            stopPeaceMusic(); // Purana music band
+            peaceSound.play().catch(e => console.log("Peace sound blocked")); // Reading music start
+            document.getElementById('stop-peace-btn').classList.remove('hidden');
+            
+            const gViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+            document.getElementById('pdf-iframe').src = gViewerUrl;
+            document.getElementById('viewer-title').innerText = title;
+            document.getElementById('viewer-layer').classList.add('active');
+        };
+
+        window.closeViewer = () => {
+            document.getElementById('viewer-layer').classList.remove('active');
+            document.getElementById('pdf-iframe').src = "";
+        };
+
+        window.refreshViewer = () => {
+            const currentSrc = document.getElementById('pdf-iframe').src;
+            document.getElementById('pdf-iframe').src = "";
+            setTimeout(() => { document.getElementById('pdf-iframe').src = currentSrc; }, 100);
+        };
+
         // --- SAVINGS LOGIC ---
         window.saveSavingsGoal = async () => {
             const name = document.getElementById('s-name').value;
@@ -252,7 +287,7 @@
             });
         });
 
-        // --- AUDIO LOGIC (BUG FIXES & IMPROVEMENTS) ---
+        // --- AUDIO LOGIC ---
         window.seekAudio = (e) => {
             if(!audioMain.duration) return;
             const wrap = document.getElementById('progress-wrap');
@@ -305,14 +340,6 @@
                 document.getElementById('p-current').innerText = formatTime(audioMain.currentTime);
                 document.getElementById('p-total').innerText = formatTime(audioMain.duration);
             }
-        };
-
-        window.readAndPlay = (url) => {
-            audioMain.pause();
-            document.getElementById('p-play').className = "fas fa-play ml-1";
-            peaceSound.play().catch(e => console.log("Blocked"));
-            document.getElementById('stop-peace-btn').classList.remove('hidden');
-            window.open(url, '_blank');
         };
 
         window.stopPeaceMusic = () => {
@@ -386,22 +413,16 @@
 
         window.setupPlayer = (s) => {
             stopPeaceMusic();
-            // Reset Progress Visuals immediately
             document.getElementById('p-progress').style.width = '0%';
             document.getElementById('p-current').innerText = '0:00';
-            
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
             document.getElementById('p-artist').innerText = s.reciter || "LABAIK";
-            
             audioMain.pause();
             audioMain.src = s.url;
-            audioMain.currentTime = 0; // Fix for the "4:14" timing bug
+            audioMain.currentTime = 0;
             audioMain.load();
-            audioMain.play().then(() => {
-                document.getElementById('p-play').className = "fas fa-pause";
-            }).catch(e => console.log("Playback failed"));
-            
+            audioMain.play().then(() => { document.getElementById('p-play').className = "fas fa-pause"; }).catch(e => console.log("Playback failed"));
             toggleLayer('player-layer', true);
         };
 
@@ -436,7 +457,7 @@
             data.forEach(b => {
                 const card = document.createElement('div');
                 card.className = "book-card";
-                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic leading-tight">${b.title}</h3><p class="text-[8px] opacity-60 mt-1 uppercase font-bold tracking-widest">${b.author || 'Rai Daim'}</p><div class="flex gap-3 mt-6"><button onclick="readAndPlay('${b.pdfUrl}')" class="bg-white text-black text-[9px] font-black px-6 py-2 rounded-full uppercase">Read</button><a href="${b.pdfUrl}" download class="bg-black/20 text-white w-9 h-9 rounded-full flex items-center justify-center border border-white/10 active:scale-90 transition"><i class="fas fa-download text-xs"></i></a></div></div><img src="${b.cover}">`;
+                card.innerHTML = `<div class="w-2/3"><h3 class="text-xl font-black italic leading-tight">${b.title}</h3><p class="text-[8px] opacity-60 mt-1 uppercase font-bold tracking-widest">${b.author || 'Rai Daim'}</p><div class="flex gap-3 mt-6"><button onclick="openViewer('${b.pdfUrl}', '${b.title}')" class="bg-white text-black text-[9px] font-black px-6 py-2 rounded-full uppercase">Read</button><a href="${b.pdfUrl}" download class="bg-black/20 text-white w-9 h-9 rounded-full flex items-center justify-center border border-white/10 active:scale-90 transition"><i class="fas fa-download text-xs"></i></a></div></div><img src="${b.cover}">`;
                 feed.appendChild(card);
             });
         };
