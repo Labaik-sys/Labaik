@@ -11,8 +11,9 @@
         .btn-green { background: #1DB954; color: #050A09; font-weight: 800; padding: 12px; border-radius: 12px; width: 100%; cursor: pointer; transition: 0.3s; }
         .btn-green:hover { background: #1ed760; transform: scale(1.02); }
         .label-style { font-weight: bold; font-size: 10px; color: #1DB954; text-transform: uppercase; letter-spacing: 1px; }
-        .book-label { color: #f472b6; } /* Pink color for book sections */
+        .book-label { color: #f472b6; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .edit-active { border: 2px solid #1DB954 !important; }
     </style>
 </head>
 <body class="max-w-6xl mx-auto">
@@ -28,7 +29,6 @@
         
         <!-- COLUMN 1: CATEGORIES & RECITERS -->
         <div class="space-y-6">
-            <!-- Noha Categories -->
             <div class="card">
                 <p class="label-style mb-4">1. Noha Categories</p>
                 <div class="flex gap-2">
@@ -38,7 +38,6 @@
                 <div id="cat-display" class="mt-4 space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
             </div>
 
-            <!-- Library Categories -->
             <div class="card">
                 <p class="label-style mb-4 book-label">2. Library Categories</p>
                 <div class="flex gap-2">
@@ -48,7 +47,6 @@
                 <div id="lib-cat-display" class="mt-4 space-y-2 max-h-40 overflow-y-auto no-scrollbar"></div>
             </div>
 
-            <!-- Reciters -->
             <div class="card">
                 <p class="label-style mb-4">3. Reciter / Creator</p>
                 <input type="text" id="cre-name" placeholder="Name">
@@ -58,11 +56,12 @@
             </div>
         </div>
 
-        <!-- COLUMN 2: PUBLISH NOHA -->
-        <div class="card">
-            <p class="label-style mb-4">4. Publish Noha</p>
-            <select id="n-cat"><option>Assign Noha Category</option></select>
-            <select id="n-cre"><option>Assign Reciter</option></select>
+        <!-- COLUMN 2: PUBLISH & EDIT NOHA -->
+        <div class="card" id="noha-form-card">
+            <p class="label-style mb-4" id="form-mode-title">4. Publish Noha</p>
+            <input type="hidden" id="edit-id">
+            <select id="n-cat"><option value="">Assign Noha Category</option></select>
+            <select id="n-cre"><option value="">Assign Reciter</option></select>
             <input type="text" id="n-name" placeholder="Noha Title">
             <input type="text" id="n-pic" placeholder="Cover URL">
             <input type="text" id="n-url" placeholder="Audio URL">
@@ -70,11 +69,18 @@
                 <input type="text" id="n-nature" placeholder="Nature Mix URL">
                 <input type="text" id="n-rain" placeholder="Rain Mix URL">
             </div>
-            <button onclick="publishNoha()" class="btn-green mt-4 italic">PUBLISH RECORD</button>
+            <button id="publish-btn" onclick="publishNoha()" class="btn-green mt-4 italic">PUBLISH RECORD</button>
+            <button id="cancel-edit-btn" onclick="resetForm()" class="hidden w-full text-[10px] font-bold opacity-40 mt-3 uppercase">Cancel Edit</button>
             
+            <!-- NEW SECTION: UNASSIGNED NOHAY -->
+            <div class="mt-8 pt-4 border-t border-red-500/20">
+                <p class="text-[9px] uppercase text-red-500 font-bold mb-3 tracking-widest">⚠️ Unassigned Records (Needs Fix)</p>
+                <div id="unassigned-list" class="space-y-2"></div>
+            </div>
+
             <div class="mt-8 pt-4 border-t border-white/5">
                 <p class="text-[9px] uppercase opacity-40 mb-3 tracking-widest">Recent Nohas</p>
-                <div id="noha-list" class="space-y-2"></div>
+                <div id="noha-list" class="space-y-2 h-64 overflow-y-auto no-scrollbar"></div>
             </div>
         </div>
 
@@ -99,7 +105,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA1tNtHLr5xiTFuU9qvEEc6IwmQFqWJLU4",
@@ -111,28 +117,25 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- Shared Delete Function ---
         window.remove = async (coll, id) => { if(confirm("Confirm Delete?")) await deleteDoc(doc(db, coll, id)); };
 
-        // --- Category Logic (Universal for Noha & Books) ---
+        // --- Category Logic ---
         window.addCategory = async (collName, inputId) => {
             const val = document.getElementById(inputId).value;
             if(val) await addDoc(collection(db, collName), { name: val });
             document.getElementById(inputId).value = '';
         };
 
-        // Listen for Noha Categories
         onSnapshot(collection(db, "categories"), (snap) => {
             const disp = document.getElementById('cat-display');
             const select = document.getElementById('n-cat');
-            disp.innerHTML = ''; select.innerHTML = '<option>Assign Noha Category</option>';
+            disp.innerHTML = ''; select.innerHTML = '<option value="">Assign Noha Category</option>';
             snap.forEach(d => {
                 disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-times text-red-500 cursor-pointer" onclick="remove('categories','${d.id}')"></i></div>`;
                 select.innerHTML += `<option value="${d.data().name}">${d.data().name}</option>`;
             });
         });
 
-        // Listen for Book Categories
         onSnapshot(collection(db, "book_categories"), (snap) => {
             const disp = document.getElementById('lib-cat-display');
             const select = document.getElementById('b-cat');
@@ -154,15 +157,16 @@
         onSnapshot(collection(db, "creators"), (snap) => {
             const disp = document.getElementById('cre-display');
             const select = document.getElementById('n-cre');
-            disp.innerHTML = ''; select.innerHTML = '<option>Assign Reciter</option>';
+            disp.innerHTML = ''; select.innerHTML = '<option value="">Assign Reciter</option>';
             snap.forEach(d => {
                 disp.innerHTML += `<div class="flex justify-between bg-white/5 p-2 rounded-lg text-xs"><span>${d.data().name}</span><i class="fas fa-times text-red-500 cursor-pointer" onclick="remove('creators','${d.id}')"></i></div>`;
                 select.innerHTML += `<option value="${d.data().name}">${d.data().name}</option>`;
             });
         });
 
-        // --- Noha Publishing ---
+        // --- Noha Publishing & Editing ---
         window.publishNoha = async () => {
+            const editId = document.getElementById('edit-id').value;
             const data = {
                 name: document.getElementById('n-name').value,
                 songPic: document.getElementById('n-pic').value,
@@ -173,21 +177,66 @@
                 rainUrl: document.getElementById('n-rain').value || "",
                 timestamp: Date.now()
             };
-            if(data.name && data.url) {
+
+            if(!data.name || !data.url) return alert("Title and Audio URL are required");
+
+            if(editId) {
+                await updateDoc(doc(db, "labaik_songs", editId), data);
+                alert("Noha Updated!");
+                resetForm();
+            } else {
                 await addDoc(collection(db, "labaik_songs"), data);
                 alert("Noha Published!");
-                document.querySelectorAll('#n-name, #n-pic, #n-url, #n-nature, #n-rain').forEach(i => i.value = '');
+                resetForm();
             }
         };
 
+        window.editNoha = (id, data) => {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('n-name').value = data.name;
+            document.getElementById('n-pic').value = data.songPic;
+            document.getElementById('n-url').value = data.url;
+            document.getElementById('n-cat').value = data.category || "";
+            document.getElementById('n-cre').value = data.reciter || "";
+            document.getElementById('n-nature').value = data.natureUrl || "";
+            document.getElementById('n-rain').value = data.rainUrl || "";
+            
+            document.getElementById('form-mode-title').innerText = "EDITING RECORD";
+            document.getElementById('publish-btn').innerText = "UPDATE RECORD";
+            document.getElementById('noha-form-card').classList.add('edit-active');
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.resetForm = () => {
+            document.getElementById('edit-id').value = '';
+            document.querySelectorAll('#noha-form-card input, #noha-form-card select').forEach(i => i.value = '');
+            document.getElementById('form-mode-title').innerText = "4. Publish Noha";
+            document.getElementById('publish-btn').innerText = "PUBLISH RECORD";
+            document.getElementById('noha-form-card').classList.remove('edit-active');
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        };
+
         onSnapshot(query(collection(db, "labaik_songs"), orderBy("timestamp", "desc")), (snap) => {
-            const disp = document.getElementById('noha-list'); disp.innerHTML = '';
+            const disp = document.getElementById('noha-list');
+            const unassignedDisp = document.getElementById('unassigned-list');
+            disp.innerHTML = ''; unassignedDisp.innerHTML = '';
+            
             snap.forEach(d => {
-                disp.innerHTML += `<div class="flex items-center gap-2 bg-white/5 p-2 rounded-lg text-[10px]">
-                    <img src="${d.data().songPic}" class="w-6 h-6 rounded object-cover">
-                    <span class="truncate flex-1">${d.data().name}</span>
+                const song = d.data();
+                const itemHtml = `<div class="flex items-center gap-2 bg-white/5 p-2 rounded-lg text-[10px]">
+                    <img src="${song.songPic}" class="w-6 h-6 rounded object-cover">
+                    <span class="truncate flex-1">${song.name}</span>
+                    <i class="fas fa-edit text-blue-400 cursor-pointer mr-1" onclick='editNoha("${d.id}", ${JSON.stringify(song).replace(/'/g, "&apos;")})'></i>
                     <i class="fas fa-trash text-red-800 cursor-pointer" onclick="remove('labaik_songs','${d.id}')"></i>
                 </div>`;
+
+                disp.innerHTML += itemHtml;
+                
+                // Check if unassigned
+                if(!song.category || !song.reciter || song.category === "Assign Noha Category" || song.reciter === "Assign Reciter") {
+                    unassignedDisp.innerHTML += itemHtml;
+                }
             });
         });
 
@@ -224,5 +273,4 @@
         });
     </script>
 </body>
-    </html>
-    
+</html>
