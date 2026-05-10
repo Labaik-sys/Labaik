@@ -20,8 +20,9 @@
         .book-card img { position: absolute; right: -15px; bottom: -15px; width: 110px; height: 150px; object-fit: cover; transform: rotate(-10deg); border-radius: 12px; transition: 0.5s; }
         .book-card:hover img { transform: rotate(0deg) scale(1.1); }
 
-        .creator-card { background: var(--pink); border-radius: 24px; min-width: 240px; height: 140px; position: relative; overflow: hidden; margin-right: 20px; flex-shrink: 0; padding: 22px; }
-        .creator-card img { position: absolute; right: 0; bottom: 0; width: 115px; height: 100%; object-fit: cover; mask-image: linear-gradient(to left, black 60%, transparent); }
+        .creator-card { background: var(--pink); border-radius: 24px; min-width: 240px; height: 140px; position: relative; overflow: hidden; margin-right: 20px; flex-shrink: 0; padding: 22px; cursor: pointer; transition: 0.3s; }
+        .creator-card:active { scale: 0.95; }
+        .creator-card img { position: absolute; right: 0; bottom: 0; width: 115px; height: 100%; object-fit: cover; mask-image: linear-gradient(to left, black 60%, transparent); pointer-events: none; }
 
         .layer { position: absolute; inset: 0; z-index: 800; transform: translateX(100%); transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); background: var(--imperial); }
         .layer.active { transform: translateX(0); }
@@ -34,10 +35,10 @@
 
         .glass-card.selected { border-color: var(--pink); background: rgba(233, 30, 99, 0.1); }
 
-        #progress-wrap { cursor: pointer; position: relative; }
-        #progress-wrap:hover #p-progress::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; background: white; border-radius: 50%; }
+        #progress-wrap { cursor: pointer; position: relative; height: 12px; display: flex; align-items: center; }
+        #p-progress { transition: width 0.1s linear; }
+        #progress-wrap:hover #p-progress::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; background: white; border-radius: 50%; box-shadow: 0 0 10px rgba(233,30,99,0.5); }
 
-        /* Jar Section Specific Styles */
         .jar-bg { background: linear-gradient(rgba(33, 57, 59, 0.9), rgba(33, 57, 59, 0.95)), url('https://files.catbox.moe/kve2k8.jpg') center/cover; }
         .savings-jar { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-top: none; border-radius: 0 0 40px 40px; position: relative; overflow: hidden; height: 120px; width: 100px; }
         .liquid { position: absolute; bottom: 0; left: 0; width: 100%; background: #e91e63; transition: height 1s ease-in-out; }
@@ -46,14 +47,13 @@
 <body>
 
     <div class="app-frame" id="main-container">
-        
         <div id="queue-toast">ADDED TO QUEUE</div>
 
         <div id="app-content" class="h-full flex flex-col">
             <header class="p-8 pb-4 flex justify-between items-center">
-                <h2 class="text-3xl font-black italic tracking-tighter">LABAIK.</h2>
+                <h2 class="text-3xl font-black italic tracking-tighter cursor-pointer" onclick="window.location.reload()">LABAIK.</h2>
                 <div class="flex items-center gap-4">
-                    <i onclick="toggleLayer('savings-layer', true)" class="fas fa-hand-holding-heart opacity-30 cursor-pointer hover:opacity-100 text-lg"></i>
+                    <i onclick="toggleLayer('savings-layer', true)" class="fas fa-hand-holding-heart opacity-30 cursor-pointer hover:opacity-100 text-lg text-pink-500"></i>
                     <i onclick="toggleLayer('sleep-layer', true)" class="fas fa-moon opacity-30 cursor-pointer hover:opacity-100 text-lg"></i>
                     <div onclick="toggleLayer('profile-layer', true)" class="w-10 h-10 rounded-full border-2 border-pink-500 overflow-hidden cursor-pointer">
                         <img id="top-pfp" src="https://via.placeholder.com/100" class="w-full h-full object-cover">
@@ -64,33 +64,32 @@
             <div class="px-8 flex-1 overflow-y-auto no-scrollbar pb-32">
                 <div class="bg-black/30 rounded-2xl p-4 flex items-center gap-4 mb-8 border border-white/10">
                     <i class="fas fa-search text-pink-500"></i>
-                    <input type="text" id="main-search" placeholder="Search Archives..." class="bg-transparent outline-none text-sm w-full font-semibold" oninput="handleSearch(this.value)">
+                    <input type="text" id="main-search" placeholder="Search Nohay or Reciters..." class="bg-transparent outline-none text-sm w-full font-semibold" oninput="handleSearch(this.value)">
                 </div>
 
                 <nav class="flex gap-8 mb-8 text-[10px] font-black tracking-widest text-white/30 border-b border-white/5 pb-3">
-                    <span class="text-white border-b-2 border-white pb-3">ARCHIVE</span>
-                    <span onclick="toggleLayer('library-layer', true)" class="cursor-pointer">LIBRARY</span>
+                    <span id="tab-archive" class="text-white border-b-2 border-white pb-3 cursor-pointer">ARCHIVE</span>
+                    <span onclick="toggleLayer('library-layer', true)" class="cursor-pointer hover:text-white transition">LIBRARY</span>
                 </nav>
 
                 <div id="main-sections">
-                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
+                    <h3 id="reciter-head" class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Reciters</h3>
                     <div id="creator-row" class="flex overflow-x-auto no-scrollbar pb-4 mb-8"></div>
-                    <h3 class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Records</h3>
+                    <h3 id="record-head" class="text-[9px] font-black text-white/20 tracking-[0.3em] uppercase mb-5">Records</h3>
                 </div>
                 
                 <div id="song-feed" class="space-y-3"></div>
             </div>
         </div>
 
+        <!-- Layers Remain Unchanged Structure-wise as per Note -->
         <div id="savings-layer" class="layer jar-bg p-8 overflow-y-auto no-scrollbar">
             <div class="flex justify-between items-center mb-8">
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('savings-layer', false)"></i>
                 <h3 class="text-[10px] font-black tracking-widest text-pink-500 uppercase">Intentions & Savings</h3>
                 <button onclick="document.getElementById('goal-modal').classList.remove('hidden')" class="bg-pink-500 w-8 h-8 rounded-full text-white">+</button>
             </div>
-
             <div id="active-savings-list" class="space-y-6"></div>
-
             <div class="mt-12 opacity-40">
                 <h4 class="text-[8px] font-black tracking-[0.3em] uppercase mb-4 text-center">Fulfilled History</h4>
                 <div id="savings-history" class="space-y-4"></div>
@@ -124,7 +123,6 @@
                 <i class="fas fa-chevron-left opacity-30 cursor-pointer" onclick="toggleLayer('sleep-layer', false)"></i>
                 <h3 class="text-[10px] font-black tracking-widest text-pink-500">SLEEP MODE</h3>
             </div>
-            
             <div class="bg-black/20 p-6 rounded-3xl border border-white/5 mb-8">
                 <p class="text-[9px] font-black text-white/30 uppercase mb-4 tracking-widest">Select Timer (Hours)</p>
                 <div class="flex items-center gap-4">
@@ -132,10 +130,8 @@
                     <span class="text-2xl font-black italic w-12 text-right"><span id="hr-val">1</span>H</span>
                 </div>
             </div>
-
             <p class="text-[9px] font-black text-white/30 uppercase mb-4 tracking-widest">Choose Records for Loop (<span id="sel-count">0</span>)</p>
             <div id="sleep-select-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 mb-6"></div>
-
             <button id="start-sleep-btn" class="w-full py-5 bg-pink-500 text-white rounded-3xl font-black tracking-widest uppercase shadow-lg active:scale-95 transition-all">Start Loop Timer</button>
             <button id="stop-timer-btn" class="hidden w-full py-5 bg-white text-black rounded-3xl font-black tracking-widest uppercase mt-4" onclick="stopSleepTimer()">Stop Active Timer</button>
         </div>
@@ -146,45 +142,37 @@
                     <img id="opt-art" class="w-12 h-12 rounded-lg object-cover">
                     <h4 id="opt-title" class="font-black text-sm truncate">--</h4>
                 </div>
-                <button id="btn-play-now" class="w-full bg-black text-white py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3">
-                    <i class="fas fa-play"></i> PLAY NOW
-                </button>
-                <button id="btn-add-queue" class="w-full bg-gray-100 text-black py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3">
-                    <i class="fas fa-list-ul"></i> ADD TO QUEUE
-                </button>
+                <button id="btn-play-now" class="w-full bg-black text-white py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3"><i class="fas fa-play"></i> PLAY NOW</button>
+                <button id="btn-add-queue" class="w-full bg-gray-100 text-black py-4 rounded-2xl font-black tracking-widest flex items-center justify-center gap-3"><i class="fas fa-list-ul"></i> ADD TO QUEUE</button>
                 <button onclick="closeOptions()" class="w-full text-[10px] font-black tracking-widest uppercase opacity-40 pt-2">Cancel</button>
             </div>
         </div>
 
         <div id="player-layer" class="layer p-10 flex flex-col">
             <div class="flex justify-between items-center mb-10">
-                <i class="fas fa-chevron-down opacity-20 text-xl" onclick="toggleLayer('player-layer', false)"></i>
+                <i class="fas fa-chevron-down opacity-20 text-xl cursor-pointer" onclick="toggleLayer('player-layer', false)"></i>
                 <div class="flex flex-col items-center">
                     <span class="text-[8px] font-black text-white/20 tracking-widest uppercase">Now Playing</span>
-                    <span id="queue-status" class="text-[7px] text-pink-500 font-black">--</span>
+                    <span id="queue-status" class="text-[7px] text-pink-500 font-black">ARCHIVE</span>
                 </div>
                 <i class="fas fa-random opacity-20"></i>
             </div>
-            
             <img id="p-art" class="w-full aspect-square rounded-[40px] shadow-2xl mb-10 object-cover border border-white/5">
             <h1 id="p-title" class="text-3xl font-black truncate tracking-tighter mb-2">--</h1>
             <p id="p-artist" class="text-pink-500 text-[10px] font-bold tracking-[0.4em] uppercase mb-10">Archive Record</p>
-            
-            <div id="progress-wrap" class="w-full bg-white/10 h-1 rounded-full mb-2" onclick="seekAudio(event)">
-                <div id="p-progress" class="bg-pink-500 h-full w-0 rounded-full transition-all duration-300 relative"></div>
+            <div id="progress-wrap" class="w-full mb-2" onclick="seekAudio(event)">
+                <div class="w-full bg-white/10 h-1 rounded-full relative">
+                    <div id="p-progress" class="bg-pink-500 h-full w-0 rounded-full relative"></div>
+                </div>
             </div>
-
             <div class="flex justify-between text-[8px] font-bold opacity-30 mb-10 uppercase tracking-widest">
                 <span id="p-current">0:00</span>
                 <span id="p-total">0:00</span>
             </div>
-
             <div class="flex items-center justify-between px-4">
-                <i class="fas fa-step-backward text-xl opacity-30" onclick="prevTrack()"></i>
-                <button onclick="toggleAudio()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-black text-3xl shadow-xl active:scale-90 transition">
-                    <i id="p-play" class="fas fa-play ml-1"></i>
-                </button>
-                <i class="fas fa-step-forward text-xl opacity-30" onclick="nextTrack()"></i>
+                <i class="fas fa-step-backward text-xl opacity-30 cursor-pointer" onclick="prevTrack()"></i>
+                <button onclick="toggleAudio()" class="w-24 h-24 bg-white rounded-full flex items-center justify-center text-black text-3xl shadow-xl active:scale-90 transition"><i id="p-play" class="fas fa-play ml-1"></i></button>
+                <i class="fas fa-step-forward text-xl opacity-30 cursor-pointer" onclick="nextTrack()"></i>
             </div>
         </div>
 
@@ -194,14 +182,12 @@
                 <button id="stop-peace-btn" onclick="stopPeaceMusic()" class="hidden bg-pink-500 text-[8px] font-black px-3 py-1 rounded-full animate-pulse">STOP READING MUSIC</button>
             </div>
             <h2 class="text-3xl font-black italic mb-6">LIBRARY.</h2>
-            
             <div class="flex gap-2 overflow-x-auto no-scrollbar mb-8">
                 <div class="category-chip active" onclick="filterLibrary('All', this)">ALL</div>
                 <div class="category-chip" onclick="filterLibrary('History', this)">HISTORY</div>
                 <div class="category-chip" onclick="filterLibrary('Poetry', this)">POETRY</div>
                 <div class="category-chip" onclick="filterLibrary('Research', this)">RESEARCH</div>
             </div>
-
             <div id="book-feed" class="space-y-6"></div>
         </div>
         
@@ -214,7 +200,6 @@
             <input type="text" id="name-input" class="bg-black/20 p-5 rounded-2xl w-full outline-none font-bold text-sm mb-4" placeholder="Edit Name" onblur="saveSettings()">
             <button onclick="handleLogout()" class="w-full py-4 text-red-500 font-black text-[10px] tracking-widest mt-10 border border-red-500/10 rounded-2xl">LOGOUT</button>
         </div>
-
     </div>
 
     <script type="module">
@@ -262,41 +247,43 @@
                 const g = d.data();
                 const perc = Math.min((g.current / g.target) * 100, 100);
                 const isDone = g.current >= g.target;
-                const card = `
-                    <div class="glass-card p-5 flex items-center gap-6 border-white/5 relative">
-                        <div class="savings-jar">
-                            <div class="liquid" style="height: ${perc}%"></div>
-                            <div class="absolute inset-0 flex items-center justify-center text-[8px] font-black">${perc.toFixed(0)}%</div>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="text-xs font-black uppercase tracking-tighter">${g.name}</h4>
-                            <p class="text-[7px] text-pink-500 font-bold uppercase mb-2">${g.cat}</p>
-                            <p class="text-sm font-black">${g.curr} ${g.current.toLocaleString()} <span class="opacity-20 text-[10px]">/ ${g.target.toLocaleString()}</span></p>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                             <i onclick="addCash('${d.id}')" class="fas fa-plus-circle text-pink-500 text-lg cursor-pointer"></i>
-                             <i onclick="delGoal('${d.id}')" class="fas fa-trash opacity-20 text-xs cursor-pointer"></i>
-                        </div>
-                    </div>`;
+                const card = `<div class="glass-card p-5 flex items-center gap-6 border-white/5 relative"><div class="savings-jar"><div class="liquid" style="height: ${perc}%"></div><div class="absolute inset-0 flex items-center justify-center text-[8px] font-black">${perc.toFixed(0)}%</div></div><div class="flex-1"><h4 class="text-xs font-black uppercase tracking-tighter">${g.name}</h4><p class="text-[7px] text-pink-500 font-bold uppercase mb-2">${g.cat}</p><p class="text-sm font-black">${g.curr} ${g.current.toLocaleString()} <span class="opacity-20 text-[10px]">/ ${g.target.toLocaleString()}</span></p></div><div class="flex flex-col gap-2"><i onclick="addCash('${d.id}')" class="fas fa-plus-circle text-pink-500 text-lg cursor-pointer"></i><i onclick="delGoal('${d.id}')" class="fas fa-trash opacity-20 text-xs cursor-pointer"></i></div></div>`;
                 if(isDone) hist.innerHTML += card; else list.innerHTML += card;
             });
         });
 
-        // --- EXISTING AUDIO LOGIC (NO CHANGES) ---
+        // --- AUDIO LOGIC (BUG FIXES & IMPROVEMENTS) ---
         window.seekAudio = (e) => {
             if(!audioMain.duration) return;
             const wrap = document.getElementById('progress-wrap');
-            const rect = wrap.getBoundingClientRect();
+            const rect = wrap.querySelector('.bg-white\\/10').getBoundingClientRect();
             const offsetX = e.clientX - rect.left;
             const width = rect.width;
-            const percentage = offsetX / width;
+            const percentage = Math.max(0, Math.min(1, offsetX / width));
             audioMain.currentTime = percentage * audioMain.duration;
         };
 
         window.handleSearch = (val) => {
             const queryVal = val.toLowerCase();
-            const filtered = allSongs.filter(s => s.name.toLowerCase().includes(queryVal) || (s.reciter && s.reciter.toLowerCase().includes(queryVal)));
+            const filtered = allSongs.filter(s => 
+                s.name.toLowerCase().includes(queryVal) || 
+                (s.reciter && s.reciter.toLowerCase().includes(queryVal))
+            );
             renderSongs(filtered);
+            if(val.length > 0) {
+                document.getElementById('reciter-head').style.display = 'none';
+                document.getElementById('creator-row').style.display = 'none';
+            } else {
+                document.getElementById('reciter-head').style.display = 'block';
+                document.getElementById('creator-row').style.display = 'flex';
+            }
+        };
+
+        window.filterByCreator = (name) => {
+            const filtered = allSongs.filter(s => s.reciter === name);
+            renderSongs(filtered);
+            document.getElementById('main-search').value = name;
+            document.getElementById('record-head').innerText = name + "'s RECORDS";
         };
 
         window.filterLibrary = (cat, el) => {
@@ -399,12 +386,22 @@
 
         window.setupPlayer = (s) => {
             stopPeaceMusic();
+            // Reset Progress Visuals immediately
+            document.getElementById('p-progress').style.width = '0%';
+            document.getElementById('p-current').innerText = '0:00';
+            
             document.getElementById('p-art').src = s.songPic;
             document.getElementById('p-title').innerText = s.name;
             document.getElementById('p-artist').innerText = s.reciter || "LABAIK";
+            
+            audioMain.pause();
             audioMain.src = s.url;
-            audioMain.play();
-            document.getElementById('p-play').className = "fas fa-pause";
+            audioMain.currentTime = 0; // Fix for the "4:14" timing bug
+            audioMain.load();
+            audioMain.play().then(() => {
+                document.getElementById('p-play').className = "fas fa-pause";
+            }).catch(e => console.log("Playback failed"));
+            
             toggleLayer('player-layer', true);
         };
 
@@ -426,8 +423,8 @@
             feed.innerHTML = '';
             data.forEach(s => {
                 const div = document.createElement('div');
-                div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5";
-                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
+                div.className = "glass-card p-4 flex items-center gap-5 cursor-pointer border border-white/5 active:bg-white/10 transition";
+                div.innerHTML = `<img src="${s.songPic}" class="w-14 h-14 rounded-xl object-cover shadow-lg"><div class="flex-1"><h4 class="text-xs font-bold truncate">${s.name}</h4><p class="text-[8px] opacity-30 mt-1 uppercase font-black">${s.reciter || 'Archive'}</p></div><i class="fas fa-ellipsis-v opacity-20"></i>`;
                 div.onclick = () => openOptions(s);
                 feed.appendChild(div);
             });
@@ -458,7 +455,11 @@
             const row = document.getElementById('creator-row'); row.innerHTML = '';
             snap.forEach(d => {
                 const c = d.data();
-                row.innerHTML += `<div class="creator-card"><h4>${c.name}</h4><img src="${c.pic}"></div>`;
+                const div = document.createElement('div');
+                div.className = "creator-card";
+                div.innerHTML = `<h4 class="font-black italic text-lg relative z-10 uppercase tracking-tighter">${c.name}</h4><img src="${c.pic}">`;
+                div.onclick = () => filterByCreator(c.name);
+                row.appendChild(div);
             });
         });
 
